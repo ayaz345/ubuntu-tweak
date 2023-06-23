@@ -95,14 +95,12 @@ class TaskView(gtk.TreeView):
 
     def __create_model(self):
         '''The model is icon, title and the list reference'''
-        model = gtk.ListStore(
-                    gobject.TYPE_STRING, #Install status
-                    gobject.TYPE_STRING,  #package name
-                    gobject.TYPE_STRING,  #task name
-                    gobject.TYPE_STRING,  #task description
-                    )
-        
-        return model
+        return gtk.ListStore(
+            gobject.TYPE_STRING,  # Install status
+            gobject.TYPE_STRING,  # package name
+            gobject.TYPE_STRING,  # task name
+            gobject.TYPE_STRING,  # task description
+        )
 
     def __add_columns(self):
         column = gtk.TreeViewColumn(_('Categories'))
@@ -136,12 +134,7 @@ class TaskView(gtk.TreeView):
     def filter_remove_packages(self, string):
         pkgs_list = [pkg.strip('-') for pkg in string.split() if pkg.endswith('-') and pkg != '--']
 
-        new_list = []
-        for pkg in pkgs_list:
-            if PackageInfo(pkg).check_installed():
-                new_list.append(pkg)
-
-        return new_list
+        return [pkg for pkg in pkgs_list if PackageInfo(pkg).check_installed()]
 
     def on_action_clicked(self, cell, path):
         iter = self.model.get_iter_from_string(path)
@@ -215,11 +208,7 @@ class TaskView(gtk.TreeView):
             if task == 'manual':
                 continue
 
-            if installed:
-                installed = _('Installed')
-            else:
-                installed = _('Install')
-
+            installed = _('Installed') if installed else _('Install')
             name, desc = TASKS[task]
             iter = self.model.append()
             self.model.set(iter, 
@@ -229,13 +218,11 @@ class TaskView(gtk.TreeView):
                     self.COLUMN_DESC, '<b>%s</b>\n%s' % (name, desc))
 
     def set_busy(self):
-        window = self.get_toplevel().window
-        if window:
+        if window := self.get_toplevel().window:
             window.set_cursor(gtk.gdk.Cursor(gtk.gdk.WATCH))
 
     def unset_busy(self):
-        window = self.get_toplevel().window
-        if window:
+        if window := self.get_toplevel().window:
             window.set_cursor(None)
 
 class TaskInstall(TweakModule):

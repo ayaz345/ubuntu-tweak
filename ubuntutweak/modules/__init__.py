@@ -82,7 +82,7 @@ class ModuleLoader:
 
         package_identy_file = os.path.join(user_folder, '__init__.py')
         if not os.path.exists(package_identy_file):
-            os.system("touch %s" % package_identy_file)
+            os.system(f"touch {package_identy_file}")
 
         return user_folder
 
@@ -185,20 +185,21 @@ class ModuleLoader:
                 self.do_single_import(f, mark_user)
 
     def _insert_moduel(self, k, v, mark_user=False):
-        if self.is_module_active(k, v):
-            self.module_table[v.get_name()] = v
+        if not self.is_module_active(k, v):
+            return
+        self.module_table[v.get_name()] = v
 
-            if mark_user:
-                v.__user_extension__ = True
+        if mark_user:
+            v.__user_extension__ = True
 
-            if v.get_category() not in dict(self.category_names):
-                self.category_table['other'][v.get_name()] = v
-            else:
-                self.category_table[v.get_category()][v.get_name()] = v
-            if hasattr(v, '__keywords__'):
-                for attr in ('name', 'title', 'description', 'keywords'):
-                    value = getattr(v, 'get_%s' % attr)()
-                    self.fuzz_search_table[value.lower()] = v
+        if v.get_category() not in dict(self.category_names):
+            self.category_table['other'][v.get_name()] = v
+        else:
+            self.category_table[v.get_category()][v.get_name()] = v
+        if hasattr(v, '__keywords__'):
+            for attr in ('name', 'title', 'description', 'keywords'):
+                value = getattr(v, f'get_{attr}')()
+                self.fuzz_search_table[value.lower()] = v
 
     @classmethod
     def is_module_active(cls, k, v):
@@ -215,8 +216,7 @@ class ModuleLoader:
             return False
 
     def get_categories(self):
-        for k, v in self.category_names:
-            yield k, v
+        yield from self.category_names
 
     def get_modules_by_category(self, category):
         modules = self.category_table.get(category).values()
@@ -228,18 +228,12 @@ class ModuleLoader:
 
     @classmethod
     def is_supported_desktop(cls, desktop_name):
-        if desktop_name:
-            return system.DESKTOP in desktop_name
-        else:
-            return True
+        return system.DESKTOP in desktop_name if desktop_name else True
 
     @classmethod
     def is_supported_distro(cls, distro):
         log.debug('is_supported_distro')
-        if distro:
-            return system.CODENAME in distro
-        else:
-            return True
+        return system.CODENAME in distro if distro else True
 
 
 class TweakModule(Gtk.VBox):
@@ -332,9 +326,7 @@ class TweakModule(Gtk.VBox):
     @classmethod
     def get_keywords(cls):
         keywords = [cls.__keywords__]
-        for k, v in inspect.getmembers(cls):
-            if k.startswith('utext'):
-                keywords.append(v)
+        keywords.extend(v for k, v in inspect.getmembers(cls) if k.startswith('utext'))
         return ' '.join(keywords)
 
     @classmethod
@@ -362,32 +354,29 @@ class TweakModule(Gtk.VBox):
     def get_pixbuf(cls, size=32):
         '''Return gtk Pixbuf'''
         if cls.__icon__:
-            if type(cls.__icon__) != list:
-                if cls.__icon__.endswith('.png'):
-                    icon_path = os.path.join(DATA_DIR, 'pixmaps', cls.__icon__)
-                    pixbuf = GdkPixbuf.Pixbuf.new_from_file(icon_path)
-                    pixbuf = pixbuf.scale_simple(size, size, GdkPixbuf.InterpType.BILINEAR)
-                else:
-                    pixbuf = icon.get_from_name(cls.__icon__, size=size)
-            else:
+            if type(cls.__icon__) == list:
                 pixbuf = icon.get_from_list(cls.__icon__, size=size)
 
+            elif cls.__icon__.endswith('.png'):
+                icon_path = os.path.join(DATA_DIR, 'pixmaps', cls.__icon__)
+                pixbuf = GdkPixbuf.Pixbuf.new_from_file(icon_path)
+                pixbuf = pixbuf.scale_simple(size, size, GdkPixbuf.InterpType.BILINEAR)
+            else:
+                pixbuf = icon.get_from_name(cls.__icon__, size=size)
             return pixbuf
 
     @classmethod
     def get_icon(cls, size=32):
         '''Return icon path'''
         if cls.__icon__:
-            if type(cls.__icon__) != list:
-                if cls.__icon__.endswith('.png'):
-                    icon_path = os.path.join(DATA_DIR, 'pixmaps', cls.__icon__)
-                    pixbuf = Gtk.gd.pixbuf_new_from_file(icon_path)
-                else:
-                    pixbuf = icon.get_from_name(cls.__icon__, size=size, only_path=True)
-            else:
-                pixbuf = icon.get_from_list(cls.__icon__, size=size, only_path=True)
+            if type(cls.__icon__) == list:
+                return icon.get_from_list(cls.__icon__, size=size, only_path=True)
 
-            return pixbuf
+            elif cls.__icon__.endswith('.png'):
+                icon_path = os.path.join(DATA_DIR, 'pixmaps', cls.__icon__)
+                return Gtk.gd.pixbuf_new_from_file(icon_path)
+            else:
+                return icon.get_from_name(cls.__icon__, size=size, only_path=True)
 
     @classmethod
     def is_user_extension(cls):
@@ -405,7 +394,7 @@ class TweakModule(Gtk.VBox):
 
 
 def create_broken_module_class(name):
-    module_name = 'Broken%s' % name.title()
+    module_name = f'Broken{name.title()}'
 
     return classobj(module_name,
                     (BrokenModule,),

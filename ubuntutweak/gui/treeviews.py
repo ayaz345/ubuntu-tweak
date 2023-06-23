@@ -173,16 +173,14 @@ class DirView(Gtk.TreeView, CommonView):
         treeselection = self.get_selection()
         model, iter = treeselection.get_selected()
         data = model.get_value(iter, self.DIR_PATH)
-        log.debug("on_drag_data_get: %s" % data)
+        log.debug(f"on_drag_data_get: {data}")
 
         if data != self.dir:
             selection.set(selection.get_target(), 8, data)
 
     def on_drag_data_received(self, treeview, context, x, y, selection, info, etime):
         '''If the source is coming from internal, then move it, or copy it.'''
-        source = selection.get_data()
-
-        if source:
+        if source := selection.get_data():
             try:
                 path, position = treeview.get_dest_row_at_pos(x, y)
                 iter = self.model.get_iter(path)
@@ -245,20 +243,19 @@ class DirView(Gtk.TreeView, CommonView):
         self.expand_all()
 
     def _create_model(self):
-        model = Gtk.TreeStore(GdkPixbuf.Pixbuf,
-                              GObject.TYPE_STRING,
-                              GObject.TYPE_STRING,
-                              GObject.TYPE_BOOLEAN)
-
-        return model
+        return Gtk.TreeStore(
+            GdkPixbuf.Pixbuf,
+            GObject.TYPE_STRING,
+            GObject.TYPE_STRING,
+            GObject.TYPE_BOOLEAN,
+        )
 
     def _setup_root_model(self):
         pixbuf = icon.guess_from_path(self.dir, 24)
 
-        iter = self.model.append(None, (pixbuf, os.path.basename(self.dir),
-                                 self.dir, False))
-
-        return iter
+        return self.model.append(
+            None, (pixbuf, os.path.basename(self.dir), self.dir, False)
+        )
 
     def do_update_model(self, dir, iter):
         for item in os.listdir(dir):
@@ -324,7 +321,7 @@ class FlatView(Gtk.TreeView, CommonView):
         treeselection = self.get_selection()
         model, iter = treeselection.get_selected()
         data = model.get_value(iter, self.FLAT_PATH)
-        log.debug("selection set data to %s with %s" % (selection.get_target(), data))
+        log.debug(f"selection set data to {selection.get_target()} with {data}")
         selection.set(selection.get_target(), 8, data)
 
     def on_drag_data_received_data(self, treeview, context, x, y, selection, info, etime):
@@ -348,12 +345,11 @@ class FlatView(Gtk.TreeView, CommonView):
                 if os.path.dirname(source) != target:
                     if os.path.isdir(source):
                         getattr(shutil, dir_action)(source, target)
-                    else:
-                        if file_action == 'move' and os.path.exists(os.path.join
+                    elif file_action == 'move' and os.path.exists(os.path.join
                                 (target, os.path.basename(source))):
-                            os.remove(source)
-                        else:
-                            getattr(shutil, file_action)(source, target)
+                        os.remove(source)
+                    else:
+                        getattr(shutil, file_action)(source, target)
             elif os.path.isdir(target) and os.path.isdir(source):
                 target = os.path.join(target, os.path.basename(source))
                 getattr(shutil, dir_action)(source, target)

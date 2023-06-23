@@ -59,7 +59,7 @@ class Clip(Gtk.VBox):
         self.set_title(self.__title__)
 
     def __str__(self):
-        return '%s' % self.__class__
+        return f'{self.__class__}'
 
     @classmethod
     def is_active(cls):
@@ -77,19 +77,17 @@ class Clip(Gtk.VBox):
     def get_pixbuf(cls, size=48):
         '''Return gtk Pixbuf'''
         if cls.__icon__:
-            if type(cls.__icon__) != list:
-                if cls.__icon__.endswith('.png'):
-                    icon_path = os.path.join(DATA_DIR, 'pixmaps', cls.__icon__)
-                    pixbuf = Gtk.gd.pixbuf_new_from_file(icon_path)
-                else:
-                    pixbuf = icon.get_from_name(cls.__icon__, size=size)
-            else:
-                pixbuf = icon.get_from_list(cls.__icon__, size=size)
+            if type(cls.__icon__) == list:
+                return icon.get_from_list(cls.__icon__, size=size)
 
-            return pixbuf
+            elif cls.__icon__.endswith('.png'):
+                icon_path = os.path.join(DATA_DIR, 'pixmaps', cls.__icon__)
+                return Gtk.gd.pixbuf_new_from_file(icon_path)
+            else:
+                return icon.get_from_name(cls.__icon__, size=size)
 
     def set_title(self, title):
-        self._label.set_markup('<b>%s</b>' % title)
+        self._label.set_markup(f'<b>{title}</b>')
 
     def set_icon(self, pixbuf):
         self._image.set_from_pixbuf(pixbuf)

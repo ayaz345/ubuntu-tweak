@@ -43,12 +43,12 @@ class ModuleButton(Gtk.Button):
     _module = None
 
     def __str__(self):
-        return '<ModuleButton: %s>' % self._module.get_title()
+        return f'<ModuleButton: {self._module.get_title()}>'
 
     def __init__(self, module):
         GObject.GObject.__init__(self)
 
-        log.info('Creating ModuleButton: %s' % module)
+        log.info(f'Creating ModuleButton: {module}')
 
         self.set_relief(Gtk.ReliefStyle.NONE)
 
@@ -80,7 +80,7 @@ class CategoryBox(Gtk.VBox):
     _current_modules = 0
 
     def __str__(self):
-        return '<CategoryBox with name: %s>' % self._category_name
+        return f'<CategoryBox with name: {self._category_name}>'
 
     def __init__(self, modules=None, category='', category_name=''):
         GObject.GObject.__init__(self)
@@ -94,15 +94,15 @@ class CategoryBox(Gtk.VBox):
         header = Gtk.HBox()
         header.set_spacing(12)
         label = Gtk.Label()
-        label.set_markup("<span color='#aaa' size='x-large' weight='640'>%s</span>" % category_name)
+        label.set_markup(
+            f"<span color='#aaa' size='x-large' weight='640'>{category_name}</span>"
+        )
         header.pack_start(label, False, False, 0)
 
         self._table = Gtk.Table()
 
         self._buttons = []
-        for module in self._modules:
-            self._buttons.append(ModuleButton(module))
-
+        self._buttons.extend(ModuleButton(module) for module in self._modules)
         self.pack_start(header, False, False, 0)
         self.pack_start(self._table, False, False, 0)
 
@@ -118,8 +118,7 @@ class CategoryBox(Gtk.VBox):
         self._current_cols = ncols
         self._current_modules = len(self._modules)
 
-        children = self._table.get_children()
-        if children:
+        if children := self._table.get_children():
             for child in children:
                 self._table.remove(child)
 
@@ -148,7 +147,7 @@ class FeaturePage(Gtk.ScrolledWindow):
     _boxes = []
 
     def __str__(self):
-        return '<FeaturePage: %s>' % self._feature
+        return f'<FeaturePage: {self._feature}>'
 
     def __init__(self, feature_name):
         GObject.GObject.__init__(self,
@@ -158,7 +157,7 @@ class FeaturePage(Gtk.ScrolledWindow):
         self.set_border_width(12)
 
         self._feature = feature_name
-        self._setting = GSetting('com.ubuntu-tweak.tweak.%s' % feature_name)
+        self._setting = GSetting(f'com.ubuntu-tweak.tweak.{feature_name}')
         self._categories = {}
         self._boxes = []
 
@@ -185,8 +184,7 @@ class FeaturePage(Gtk.ScrolledWindow):
             self._box.remove(child)
 
         for category, category_name in loader.get_categories():
-            modules = loader.get_modules_by_category(category)
-            if modules:
+            if modules := loader.get_modules_by_category(category):
                 module_to_loads = self._setting.get_value()
 
                 for module in modules:
@@ -358,7 +356,10 @@ class UbuntuTweakWindow(GuiBuilder):
             self.search_page.search(text)
             self.search_entry.set_property('secondary-icon-name', 'edit-clear')
         else:
-            self.on_feature_button_clicked(getattr(self, '%s_button' % self.current_feature), self.current_feature)
+            self.on_feature_button_clicked(
+                getattr(self, f'{self.current_feature}_button'),
+                self.current_feature,
+            )
             self.search_page.clean()
             self.search_entry.set_property('secondary-icon-name', 'edit-find')
 
@@ -371,8 +372,8 @@ class UbuntuTweakWindow(GuiBuilder):
         return self.modules_index[index], index
 
     def select_target_feature(self, text):
-        toggle_button = getattr(self, '%s_button' % text, None)
-        log.info("select_target_feature: %s" % text)
+        toggle_button = getattr(self, f'{text}_button', None)
+        log.info(f"select_target_feature: {text}")
         if toggle_button:
             self.current_feature = text
             toggle_button.set_active(True)
@@ -384,11 +385,11 @@ class UbuntuTweakWindow(GuiBuilder):
             self.mainwindow.set_default_size(width, height)
 
         for feature_button in ('overview_button', 'apps_button', 'admins_button', \
-                               'tweaks_button', 'janitor_button'):
+                                   'tweaks_button', 'janitor_button'):
             button = getattr(self, feature_button)
 
             label = button.get_child().get_label()
-            button.get_child().set_markup('<b>%s</b>' % label)
+            button.get_child().set_markup(f'<b>{label}</b>')
             button.get_child().set_use_underline(True)
         splash_window.destroy()
 
@@ -428,7 +429,7 @@ class UbuntuTweakWindow(GuiBuilder):
         self.preferences_dialog.hide()
 
     def on_module_selected(self, widget, name):
-        log.debug('Select module: %s' % name)
+        log.debug(f'Select module: {name}')
 
         if name in self.loaded_modules:
             module, index = self.get_module_and_index(name)
@@ -447,7 +448,7 @@ class UbuntuTweakWindow(GuiBuilder):
 
         if module and index:
             self.module_image.set_from_pixbuf(module.get_pixbuf(size=48))
-            self.title_label.set_markup('<b><big>%s</big></b>' % module.get_title())
+            self.title_label.set_markup(f'<b><big>{module.get_title()}</big></b>')
             self.description_label.set_text(module.get_description())
             page = self.notebook.get_nth_page(index)
 
@@ -476,7 +477,7 @@ class UbuntuTweakWindow(GuiBuilder):
                 self._last_unlock.hide()
 
     def _save_loaded_info(self, name, module, index):
-        log.info('_save_loaded_info: %s, %s, %s' % (name, module, index))
+        log.info(f'_save_loaded_info: {name}, {module}, {index}')
         self.loaded_modules[name] = index
         self.modules_index[index] = module
         self.navigation_dict[self.current_feature] = name, None
@@ -565,20 +566,17 @@ class UbuntuTweakWindow(GuiBuilder):
     def on_janitor_button_toggled(self, widget):
         self.on_feature_button_clicked(widget, 'janitor')
         self.module_image.set_from_pixbuf(icon.get_from_name('computerjanitor', size=48))
-        self.title_label.set_markup('<b><big>%s</big></b>' % _('Computer Janitor'))
+        self.title_label.set_markup(f"<b><big>{_('Computer Janitor')}</big></b>")
         self.description_label.set_text(_("Clean up a system so it's more like a freshly installed one"))
 
     def on_feature_button_clicked(self, widget, feature):
-        log.debug("on_%s_button_toggled and widget.active is: %s" % (feature, widget.get_active()))
+        log.debug(
+            f"on_{feature}_button_toggled and widget.active is: {widget.get_active()}"
+        )
         self.current_feature = feature
 
         if widget.get_active():
-            if feature not in self.navigation_dict:
-                log.debug("Feature %s is not in self.navigation_dict" % feature)
-                self.navigation_dict[feature] = None, None
-                self.notebook.set_current_page(self.feature_dict[feature])
-                self.set_current_module(None)
-            else:
+            if feature in self.navigation_dict:
                 back, backwards = self.navigation_dict[feature]
                 if back:
                     module, index = self.get_module_and_index(back)
@@ -588,6 +586,11 @@ class UbuntuTweakWindow(GuiBuilder):
                     self.notebook.set_current_page(self.feature_dict[feature])
                     self.set_current_module(None)
 
+            else:
+                log.debug(f"Feature {feature} is not in self.navigation_dict")
+                self.navigation_dict[feature] = None, None
+                self.notebook.set_current_page(self.feature_dict[feature])
+                self.set_current_module(None)
             if feature == 'apps':
                 log.debug("handler_block_by_func by apps")
                 self.back_button.handler_block_by_func(self.on_back_button_clicked)
@@ -598,15 +601,14 @@ class UbuntuTweakWindow(GuiBuilder):
                 self.apps_page.set_web_buttons_active(True)
             else:
                 self.update_jump_buttons()
-        else:
-            if feature == 'apps':
-                log.debug("handler_unblock_by_func by apps")
-                self.apps_page.set_web_buttons_active(False)
-                self.back_button.handler_unblock_by_func(self.on_back_button_clicked)
-                self.next_button.handler_unblock_by_func(self.on_next_button_clicked)
+        elif feature == 'apps':
+            log.debug("handler_unblock_by_func by apps")
+            self.apps_page.set_web_buttons_active(False)
+            self.back_button.handler_unblock_by_func(self.on_back_button_clicked)
+            self.next_button.handler_unblock_by_func(self.on_next_button_clicked)
 
     def log_used_module(self, name):
-        log.debug("Log the %s to Recently Used" % name)
+        log.debug(f"Log the {name} to Recently Used")
         used_list = self.recently_used_settings.get_value()
 
         if name in used_list:

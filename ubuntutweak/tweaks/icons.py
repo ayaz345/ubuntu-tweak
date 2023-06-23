@@ -96,9 +96,7 @@ class DesktopIcon(Gtk.VBox):
 
     def on_show_button_changed(self, widget):
         self.show_hbox.set_sensitive(self.show_button.get_active())
-        active = self.rename_button.get_active()
-
-        if active:
+        if active := self.rename_button.get_active():
             self.entry.set_sensitive(True)
             self.entry.grab_focus()
         else:
@@ -129,9 +127,7 @@ class Icons(TweakModule):
         setting_list = []
         show_switch.connect('notify::active', self.on_show_button_changed, setting_list)
 
-        for item in desktop_icons:
-            setting_list.append(DesktopIcon(item))
-
+        setting_list.extend(DesktopIcon(item) for item in desktop_icons)
         volumes_button = WidgetFactory.create("CheckButton",
                                       label=self.utext_mount_volume,
                                       key="org.gnome.nautilus.desktop.volumes-visible",
@@ -147,8 +143,9 @@ class Icons(TweakModule):
 
         notes_label = Gtk.Label()
         notes_label.set_property('halign', Gtk.Align.START)
-        notes_label.set_markup('<span size="smaller">%s</span>' % \
-                _('Note: switch off this option will make the desktop unclickable'))
+        notes_label.set_markup(
+            f"""<span size="smaller">{_('Note: switch off this option will make the desktop unclickable')}</span>"""
+        )
         notes_label._ut_left = 1
 
         grid_box = GridPack((show_label, show_switch),

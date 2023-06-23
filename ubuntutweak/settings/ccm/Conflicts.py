@@ -28,7 +28,7 @@ from Utils import *
 import locale
 import gettext
 locale.setlocale(locale.LC_ALL, "")
-gettext.bindtextdomain("ccsm", DataDir + "/locale")
+gettext.bindtextdomain("ccsm", f"{DataDir}/locale")
 gettext.textdomain("ccsm")
 _ = gettext.gettext
 
@@ -145,8 +145,8 @@ class KeyConflict(ActionConflict):
         for s in self.Settings:
             if s is setting:
                 continue
-            if s.Type == 'Key':
-                if s.Value.lower() == newValue:
+            if s.Value.lower() == newValue:
+                if s.Type == 'Key':
                     self.Conflicts.append (s)
 
 class ButtonConflict(ActionConflict):
@@ -168,8 +168,8 @@ class ButtonConflict(ActionConflict):
         for s in self.Settings:
             if s is setting:
                 continue
-            if s.Type == 'Button':
-                if s.Value.lower() == newValue:
+            if s.Value.lower() == newValue:
+                if s.Type == 'Button':
                     self.Conflicts.append (s)
 
 class EdgeConflict(ActionConflict):
@@ -184,9 +184,8 @@ class EdgeConflict(ActionConflict):
 
         if not ignoreOld:
             oldEdges = set(self.Setting.Value.split("|"))
-            diff = newEdges - oldEdges
-            if diff:
-               newEdges = diff # no need to check edges that were already set
+            if diff := newEdges - oldEdges:
+                newEdges = diff # no need to check edges that were already set
             else:
                 return
 
@@ -195,8 +194,7 @@ class EdgeConflict(ActionConflict):
                 continue
             elif s.Type == 'Edge':
                 settingEdges = set(s.Value.split("|"))
-                union = newEdges & settingEdges
-                if union:
+                if union := newEdges & settingEdges:
                     for edge in union:
                         self.Conflicts.append ((s, edge))
                         break
@@ -236,11 +234,7 @@ class FeatureRequirement(Conflict):
             return True
         elif not self.Found:
             answer = self.ErrorAskUser()
-            if answer == Gtk.ResponseType.YES:
-                return True
-            else:
-                return False
-        
+            return answer == Gtk.ResponseType.YES
         for plugin in self.Requirements:
             answer = self.AskUser(plugin)
             if answer == Gtk.ResponseType.YES:
@@ -250,7 +244,7 @@ class FeatureRequirement(Conflict):
 
     def ErrorAskUser(self):
         msg = _("You are trying to use the feature <b>%(feature)s</b> which is <b>not</b> provided by any plugin.\n"\
-                "Do you wish to use this feature anyway?")
+                    "Do you wish to use this feature anyway?")
 
         msg_dict = {'feature': self.Feature}
 
@@ -259,14 +253,12 @@ class FeatureRequirement(Conflict):
         yesButton = (_("Use %(feature)s") % msg_dict,       Gtk.STOCK_YES, Gtk.ResponseType.YES)
         noButton  = (_("Don't use %(feature)s") % msg_dict, Gtk.STOCK_NO,  Gtk.ResponseType.NO)
 
-        answer = self.Ask(msg, (noButton, yesButton))
-
-        return answer
+        return self.Ask(msg, (noButton, yesButton))
 
     def AskUser(self, plugin):
         msg = _("You are trying to use the feature <b>%(feature)s</b> which is provided by <b>%(plugin)s</b>.\n"\
-                "This plugin is currently disabled.\n"\
-                "Do you wish to enable <b>%(plugin)s</b> so the feature is available?")
+                    "This plugin is currently disabled.\n"\
+                    "Do you wish to enable <b>%(plugin)s</b> so the feature is available?")
 
         msg_dict = {'feature': self.Feature,
                     'plugin': plugin.ShortDesc}
@@ -276,9 +268,7 @@ class FeatureRequirement(Conflict):
         yesButton = (_("Enable %(plugin)s") % msg_dict,       Gtk.STOCK_YES, Gtk.ResponseType.YES)
         noButton  = (_("Don't enable %(feature)s") % msg_dict, Gtk.STOCK_NO,  Gtk.ResponseType.NO)
 
-        answer = self.Ask(msg, (noButton, yesButton))
-
-        return answer
+        return self.Ask(msg, (noButton, yesButton))
 
 class PluginConflict(Conflict):
     def __init__(self, plugin, conflicts, autoResolve=False):
@@ -290,87 +280,81 @@ class PluginConflict(Conflict):
         for conflict in self.Conflicts:
             if conflict[0] == 'ConflictFeature':
                 answer = self.AskUser(self.Plugin, conflict)
-                if answer == Gtk.ResponseType.YES:
-                    disableConflicts = conflict[2][0].DisableConflicts
-                    con = PluginConflict(conflict[2][0], disableConflicts,
-                                         self.AutoResolve)
-                    if con.Resolve():
-                        conflict[2][0].Enabled = False
-                    else:
-                        return False
-                else:
+                if answer != Gtk.ResponseType.YES:
                     return False
 
+                disableConflicts = conflict[2][0].DisableConflicts
+                con = PluginConflict(conflict[2][0], disableConflicts,
+                                     self.AutoResolve)
+                if con.Resolve():
+                    conflict[2][0].Enabled = False
+                else:
+                    return False
             elif conflict[0] == 'ConflictPlugin':
                 answer = self.AskUser(self.Plugin, conflict)
-                if answer == Gtk.ResponseType.YES:
-                    disableConflicts = conflict[2][0].DisableConflicts
-                    con = PluginConflict(conflict[2][0], disableConflicts,
-                                         self.AutoResolve)
-                    if con.Resolve():
-                        conflict[2][0].Enabled = False
-                    else:
-                        return False
+                if answer != Gtk.ResponseType.YES:
+                    return False
+
+                disableConflicts = conflict[2][0].DisableConflicts
+                con = PluginConflict(conflict[2][0], disableConflicts,
+                                     self.AutoResolve)
+                if con.Resolve():
+                    conflict[2][0].Enabled = False
                 else:
                     return False
-            
             elif conflict[0] == 'RequiresFeature':
                 answer, choice = self.AskUser(self.Plugin, conflict)
-                if answer == Gtk.ResponseType.YES:
-                    for plg in conflict[2]:
-                        if plg.ShortDesc == choice:
-                            enableConflicts = plg.EnableConflicts
-                            con = PluginConflict(plg, enableConflicts,
-                                                 self.AutoResolve)
-                            if con.Resolve():
-                                plg.Enabled = True
-                            else:
-                                return False
-                            break
-                else:
+                if answer != Gtk.ResponseType.YES:
                     return False
 
+                for plg in conflict[2]:
+                    if plg.ShortDesc == choice:
+                        enableConflicts = plg.EnableConflicts
+                        con = PluginConflict(plg, enableConflicts,
+                                             self.AutoResolve)
+                        if con.Resolve():
+                            plg.Enabled = True
+                        else:
+                            return False
+                        break
             elif conflict[0] == 'RequiresPlugin':
                 answer = self.AskUser(self.Plugin, conflict)
-                if answer == Gtk.ResponseType.YES:
-                    enableConflicts = conflict[2][0].EnableConflicts
-                    con = PluginConflict(conflict[2][0], enableConflicts,
-                                         self.AutoResolve)
-                    if con.Resolve():
-                        conflict[2][0].Enabled = True
-                    else:
-                        return False
-                else:
+                if answer != Gtk.ResponseType.YES:
                     return False
 
+                enableConflicts = conflict[2][0].EnableConflicts
+                con = PluginConflict(conflict[2][0], enableConflicts,
+                                     self.AutoResolve)
+                if con.Resolve():
+                    conflict[2][0].Enabled = True
+                else:
+                    return False
             elif conflict[0] == 'FeatureNeeded':
                 answer = self.AskUser(self.Plugin, conflict)
-                if answer == Gtk.ResponseType.YES:
-                    for plg in conflict[2]:
-                        disableConflicts = plg.DisableConflicts
-                        con = PluginConflict(plg, disableConflicts,
-                                             self.AutoResolve)
-                        if con.Resolve():
-                            plg.Enabled = False
-                        else:
-                            return False
-                else:
+                if answer != Gtk.ResponseType.YES:
                     return False
 
+                for plg in conflict[2]:
+                    disableConflicts = plg.DisableConflicts
+                    con = PluginConflict(plg, disableConflicts,
+                                         self.AutoResolve)
+                    if con.Resolve():
+                        plg.Enabled = False
+                    else:
+                        return False
             elif conflict[0] == 'PluginNeeded':
                 answer = self.AskUser(self.Plugin, conflict)
-                if answer == Gtk.ResponseType.YES:
-                    for plg in conflict[2]:
-                        disableConflicts = plg.DisableConflicts
-                        con = PluginConflict(plg, disableConflicts,
-                                             self.AutoResolve)
-                        if con.Resolve():
-                            plg.Enabled = False
-                        else:
-                            return False
-                else:
+                if answer != Gtk.ResponseType.YES:
                     return False
 
+                for plg in conflict[2]:
+                    disableConflicts = plg.DisableConflicts
+                    con = PluginConflict(plg, disableConflicts,
+                                         self.AutoResolve)
+                    if con.Resolve():
+                        plg.Enabled = False
+                    else:
+                        return False
         # Only when enabling a plugin
         types = []
         actionConflicts = []

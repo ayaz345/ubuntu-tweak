@@ -62,8 +62,8 @@ FilterAll = FilterName | FilterLongDesc | FilterValue | FilterCategory
 # Paths
 #
 DataDir = "/usr/share"
-IconDir = DataDir+"/ccsm/icons"
-PixmapDir = DataDir+"/ccsm/images"
+IconDir = f"{DataDir}/ccsm/icons"
+PixmapDir = f"{DataDir}/ccsm/images"
 
 # Version
 #
@@ -75,7 +75,7 @@ Version = "0.9.4"
 import locale
 import gettext
 locale.setlocale(locale.LC_ALL, "")
-gettext.bindtextdomain("ccsm", DataDir + "/locale")
+gettext.bindtextdomain("ccsm", f"{DataDir}/locale")
 gettext.textdomain("ccsm")
 _ = gettext.gettext
 

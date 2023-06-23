@@ -93,8 +93,8 @@ class TweakSettings:
     def get_sync_notify(cls):
         return cls.config.get_value_from_key(cls.sync_notify, default=True)
 
-    def set_use_mirror_ppa(cls, bool):
-        return cls.config.set_value_from_key(cls.use_mirror_ppa, bool)
+    def set_use_mirror_ppa(self, bool):
+        return self.config.set_value_from_key(self.use_mirror_ppa, bool)
 
     @classmethod
     def get_use_mirror_ppa(cls):
@@ -130,9 +130,7 @@ class TweakSettings:
 
     @classmethod
     def get_paned_size(cls):
-        position = cls.config.get_value_from_key(cls.toolbar_size)
-
-        if position:
+        if position := cls.config.get_value_from_key(cls.toolbar_size):
             return position
         else:
             return 150

@@ -50,11 +50,11 @@ class PackageConfigsPlugin(JanitorPlugin):
 
     def clean_cruft(self, cruft_list=[], parent=None):
         for index, cruft in enumerate(cruft_list):
-            log.debug('Cleaning...%s' % cruft.get_name())
+            log.debug(f'Cleaning...{cruft.get_name()}')
             proxy.clean_configs(cruft.get_name())
             line, returncode = proxy.get_cmd_pipe()
             while returncode == 'None':
-                log.debug('output: %s, returncode: %s' % (line, returncode))
+                log.debug(f'output: {line}, returncode: {returncode}')
                 time.sleep(0.2)
                 line, returncode = proxy.get_cmd_pipe()
 

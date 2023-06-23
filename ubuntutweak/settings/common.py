@@ -24,7 +24,7 @@ class RawConfigSetting(object):
 
         # This is a hard code str type, so return '"xxx"' instead of 'xxx'
         if self._type == str:
-            value = "'%s'" % value
+            value = f"'{value}'"
 
         return value
 
@@ -104,16 +104,16 @@ class Schema(object):
 
     @classmethod
     def load_schema(cls, schema_id, key):
-        log.debug("Loading schema value for: %s/%s" % (schema_id, key))
+        log.debug(f"Loading schema value for: {schema_id}/{key}")
         if not cls.cached_override:
             cls.load_override()
 
         if schema_id in cls.cached_override and \
-                key in cls.cached_override[schema_id]:
+                    key in cls.cached_override[schema_id]:
             return cls.cached_override[schema_id][key]
 
         if schema_id in cls.cached_schema and \
-                key in cls.cached_schema[schema_id]:
+                    key in cls.cached_schema[schema_id]:
             return cls.cached_schema[schema_id][key]
 
         schema_defaults = {}
@@ -129,38 +129,31 @@ class Schema(object):
                 tree = etree.parse(open(schema_path))
 
             for schema_node in tree.findall('schema'):
-                if schema_node.attrib.get('id') == schema_id:
-                    for key_node in schema_node.findall('key'):
-                        if key_node.findall('default'):
-                            schema_defaults[key_node.attrib['name']] = cls.parse_value(key_node)
-                else:
+                if schema_node.attrib.get('id') != schema_id:
                     continue
 
+                for key_node in schema_node.findall('key'):
+                    if key_node.findall('default'):
+                        schema_defaults[key_node.attrib['name']] = cls.parse_value(key_node)
                 cls.cached_schema[schema_id] = schema_defaults
-        if key in schema_defaults:
-            return schema_defaults[key]
-        else:
-            return None
+        return schema_defaults.get(key, None)
 
     @classmethod
     def parse_value(cls, key_node):
-        log.debug("Try to get type for value: %s" % key_node.items())
+        log.debug(f"Try to get type for value: {key_node.items()}")
         value = key_node.find('default').text
 
         #TODO enum type
         if key_node.attrib.get('type'):
             type = key_node.attrib['type']
 
-            if type == 'b':
-                if value == 'true':
-                    return True
-                else:
-                    return False
-            elif type == 'i':
-                return int(value)
-            elif type == 'd':
-                return float(value)
-            elif type == 'as':
+            if type == 'as':
                 return eval(value)
 
+            elif type == 'b':
+                return value == 'true'
+            elif type == 'd':
+                return float(value)
+            elif type == 'i':
+                return int(value)
         return eval(value)

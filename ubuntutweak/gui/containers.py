@@ -131,18 +131,11 @@ class GridPack(Gtk.Grid):
         new_list = []
         for item in items:
             if type(item) == list:
-                is_not_none = True
-
-                for sub_item in item:
-                    if sub_item is None:
-                        is_not_none = False
-                        break
-
+                is_not_none = all(sub_item is not None for sub_item in item)
                 if is_not_none:
                     new_list.append(item)
-            else:
-                if item:
-                    new_list.append(item)
+            elif item:
+                new_list.append(item)
 
         if type(new_list[0]) == Gtk.Separator:
             new_list.pop(0)
@@ -181,29 +174,24 @@ class GridPack(Gtk.Grid):
 
     def _insert_items(self):
         for top_attach, item in enumerate(self._items):
-            log.debug("Found item: %s" % str(item))
+            log.debug(f"Found item: {str(item)}")
             if item is not None:
                 if issubclass(item.__class__, Gtk.Widget):
                     if issubclass(item.__class__, Gtk.Separator):
                         item.set_size_request(-1, 20)
                         left = 0
-                        top = top_attach + 1
                         width = self._column
-                        height = 1
                     elif issubclass(item.__class__, Gtk.CheckButton) or \
-                         issubclass(item.__class__, Gtk.Box):
+                             issubclass(item.__class__, Gtk.Box):
                         left = 1
-                        top = top_attach + 1
                         width = 1
-                        height = 1
                     else:
                         left = getattr(item, '_ut_left', 0)
-                        top = top_attach + 1
                         width = self._column
-                        height = 1
-
+                    height = 1
+                    top = top_attach + 1
                     log.debug("Attach item: %s to Grid: %s,%s,%s,%s\n" % \
-                              (str(item), left, top, width, height))
+                                  (str(item), left, top, width, height))
                     self.attach(item, left, top, width, height)
                 else:
                     for left_attch, widget in enumerate(item):
@@ -213,14 +201,14 @@ class GridPack(Gtk.Grid):
                                 widget.set_property('hexpand', True)
                             else:
                                 if issubclass(widget.__class__, Gtk.Switch) or \
-                                issubclass(widget.__class__, Gtk.CheckButton) or \
-                                hasattr(widget, 'get_default_value'):
+                                    issubclass(widget.__class__, Gtk.CheckButton) or \
+                                    hasattr(widget, 'get_default_value'):
                                     #so this is reset button
 
-                                    log.debug("Set the widget(%s) Align START" % widget)
+                                    log.debug(f"Set the widget({widget}) Align START")
                                     widget.set_property('halign', Gtk.Align.START)
                                 else:
-                                    log.debug("Set the widget(%s) width to 200" % widget)
+                                    log.debug(f"Set the widget({widget}) width to 200")
                                     # The initial value is 200, but maybe larger in gird_size_allocate
                                     widget.set_size_request(200, -1)
                                     # If widget is not the last column, so not set the  Align START, just make it fill the space

@@ -17,18 +17,19 @@ class GSetting(object):
         self.type = type
         self.default = default
         self.schema_default = self.default or Schema.load_schema(self.schema_id, self.key)
-        log.debug("Got the schema_default: %s for key: %s.%s" % \
-                  (self.schema_default, self.schema_id, self.key))
+        log.debug(
+            f"Got the schema_default: {self.schema_default} for key: {self.schema_id}.{self.key}"
+        )
 
         if self.schema_id in Gio.Settings.list_schemas():
             self.settings = Gio.Settings(self.schema_id)
         else:
-            raise Exception('Oops, Settings schema "%s" is not installed' % self.schema_id)
+            raise Exception(f'Oops, Settings schema "{self.schema_id}" is not installed')
 
         if self.key not in self.settings.list_keys():
-            log.error("No key (%s) for schema %s" % (self.key, self.schema_id))
+            log.error(f"No key ({self.key}) for schema {self.schema_id}")
 
-        if default and self.get_value() == None:
+        if default and self.get_value() is None:
             self.set_value(default)
 
     def get_value(self):
@@ -63,7 +64,7 @@ class GSetting(object):
             log.error(e)
 
     def connect_notify(self, func, data=None):
-        self.settings.connect("changed::%s" % self.key, func, data)
+        self.settings.connect(f"changed::{self.key}", func, data)
 
     def unset(self):
         self.settings.reset(self.key)

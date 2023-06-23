@@ -16,7 +16,7 @@ class TestConfigSettings(unittest.TestCase):
 
     def test_config_settings(self):
         # draw grid
-        draw_grid_setting_key = "%s::%s#%s" % (self.unity_greeter_override_path, 'com.canonical.unity-greeter', 'draw-grid')
+        draw_grid_setting_key = f"{self.unity_greeter_override_path}::com.canonical.unity-greeter#draw-grid"
 
         self.draw_grid_setting = ConfigSetting(draw_grid_setting_key, type=bool)
         self.assertEqual(True, self.draw_grid_setting.get_value())
@@ -42,7 +42,7 @@ class TestConfigSettings(unittest.TestCase):
         self.assertEqual("/usr/share/backgrounds/The_Forbidden_City_by_Daniel_Mathis.jpg", background_setting.get_value())
 
     def get_key(self, key):
-        return "%s::%s#%s" % (self.unity_greeter_override_path, 'com.canonical.unity-greeter', key)
+        return f"{self.unity_greeter_override_path}::com.canonical.unity-greeter#{key}"
 
 
 if __name__ == '__main__':

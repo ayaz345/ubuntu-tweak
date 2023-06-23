@@ -71,8 +71,7 @@ class UpdateManager(TweakModule):
 
         PACKAGE_WORKER.update_apt_cache(True)
 
-        new_updates = list(PACKAGE_WORKER.get_update_package())
-        if new_updates:
+        if new_updates := list(PACKAGE_WORKER.get_update_package()):
             self.updateview.get_model().clear()
             self.updateview.update_updates(new_updates)
         else:

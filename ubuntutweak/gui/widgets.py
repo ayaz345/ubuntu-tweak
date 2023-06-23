@@ -19,20 +19,20 @@ class SettingWidget(object):
         default = kwargs['default']
         type = kwargs['type']
 
-        if backend == 'gconf':
+        if backend == 'compiz':
+            self._setting = CompizSetting(key=key)
+        elif backend == 'config':
+            self._setting = ConfigSetting(key=key, type=type)
+        elif backend == 'gconf':
             self._setting = GconfSetting(key=key, default=default, type=type)
         elif backend == 'gsettings':
             self._setting = GSetting(key=key, default=default, type=type)
-        elif backend == 'config':
-            self._setting = ConfigSetting(key=key, type=type)
-        elif backend == 'compiz':
-            self._setting = CompizSetting(key=key)
         elif backend == 'systemconfig':
             self._setting = SystemConfigSetting(key=key, default=default, type=type)
 
         if hasattr(self._setting, 'connect_notify') and \
-                hasattr(self, 'on_value_changed'):
-            log.debug("Connect the setting notify to on_value_changed: %s" % key)
+                    hasattr(self, 'on_value_changed'):
+            log.debug(f"Connect the setting notify to on_value_changed: {key}")
             self.get_setting().connect_notify(self.on_value_changed)
 
     def get_setting(self):
@@ -41,7 +41,7 @@ class SettingWidget(object):
 
 class CheckButton(Gtk.CheckButton, SettingWidget):
     def __str__(self):
-        return '<CheckButton with key: %s>' % self.get_setting().key
+        return f'<CheckButton with key: {self.get_setting().key}>'
 
     def __init__(self, label=None, key=None,
                  default=None, tooltip=None, backend='gconf'):
@@ -66,7 +66,7 @@ class CheckButton(Gtk.CheckButton, SettingWidget):
 
 class Switch(Gtk.Switch, SettingWidget):
     def __str__(self):
-        return '<Switch with key: %s>' % self.get_setting().key
+        return f'<Switch with key: {self.get_setting().key}>'
 
     def __init__(self, key=None, default=None,
                  on=True, off=False,
@@ -94,7 +94,7 @@ class Switch(Gtk.Switch, SettingWidget):
         if self._reverse:
             log.debug("The value is reversed")
             bool = not bool
-        log.debug("Set the swtich to: %s" % bool)
+        log.debug(f"Set the swtich to: {bool}")
         super(Switch, self).set_active(bool)
 
     def get_active(self):
@@ -125,7 +125,7 @@ class Switch(Gtk.Switch, SettingWidget):
 
 class UserCheckButton(Gtk.CheckButton, SettingWidget):
     def __str__(self):
-        return '<UserCheckButton with key: %s, with user: %s>' % (self.get_setting().key, self.user)
+        return f'<UserCheckButton with key: {self.get_setting().key}, with user: {self.user}>'
 
     def __init__(self, user=None, label=None, key=None, default=None,
                  tooltip=None, backend='gconf'):
@@ -146,8 +146,7 @@ class UserCheckButton(Gtk.CheckButton, SettingWidget):
 
 class ResetButton(Gtk.Button):
     def __str__(self):
-        return '<ResetButton with key: %s: reverse: %s>' % \
-                (self._setting.key, self._reverse)
+        return f'<ResetButton with key: {self._setting.key}: reverse: {self._reverse}>'
 
     def __init__(self, setting, reverse=False):
         GObject.GObject.__init__(self)
@@ -171,7 +170,7 @@ class ResetButton(Gtk.Button):
 class StringCheckButton(CheckButton):
     '''This class use to moniter the key with StringSetting, nothing else'''
     def __str__(self):
-        return '<StringCheckButton with key: %s>' % self.get_setting().key
+        return f'<StringCheckButton with key: {self.get_setting().key}>'
 
     def __init__(self, **kwargs):
         CheckButton.__init__(self, **kwargs)
@@ -186,14 +185,13 @@ class StringCheckButton(CheckButton):
 
 class Entry(Gtk.Entry, SettingWidget):
     def __str__(self):
-        return '<Entry with key: %s>' % self.get_setting().key
+        return f'<Entry with key: {self.get_setting().key}>'
 
     def __init__(self, key=None, default=None, backend='gconf'):
         GObject.GObject.__init__(self)
         SettingWidget.__init__(self, key=key, default=default, type=str, backend=backend)
 
-        string = self.get_setting().get_value()
-        if string:
+        if string := self.get_setting().get_value():
             self.set_text(str(string))
 
         text_buffer = self.get_buffer()
@@ -215,13 +213,13 @@ class Entry(Gtk.Entry, SettingWidget):
         return self.get_setting()
 
     def on_edit_finished_cb(self, widget, *args):
-        log.debug('Entry: on_edit_finished_cb: %s' % self.get_text())
+        log.debug(f'Entry: on_edit_finished_cb: {self.get_text()}')
         self.get_setting().set_value(self.get_text())
 
 
 class ComboBox(Gtk.ComboBox, SettingWidget):
     def __str__(self):
-        return '<ComboBox with key: %s>' % self.get_setting().key
+        return f'<ComboBox with key: {self.get_setting().key}>'
 
     def __init__(self, key=None, default=None,
                  texts=None, values=None,
@@ -265,10 +263,9 @@ class ComboBox(Gtk.ComboBox, SettingWidget):
         self.handler_unblock_by_func(self.value_changed_cb)
 
     def value_changed_cb(self, widget):
-        iter = widget.get_active_iter()
-        if iter:
+        if iter := widget.get_active_iter():
             text = self.get_model().get_value(iter, 1)
-            log.debug("ComboBox value changed to %s" % text)
+            log.debug(f"ComboBox value changed to {text}")
 
             self.get_setting().set_value(text)
 
@@ -278,7 +275,7 @@ class ComboBox(Gtk.ComboBox, SettingWidget):
 
 class FontButton(Gtk.FontButton, SettingWidget):
     def __str__(self):
-        return '<FontButton with key: %s>' % self.get_setting().key
+        return f'<FontButton with key: {self.get_setting().key}>'
 
     def __init__(self, key=None, default=None, backend='gconf'):
         GObject.GObject.__init__(self)
@@ -296,9 +293,7 @@ class FontButton(Gtk.FontButton, SettingWidget):
 
     @log_func(log)
     def on_value_changed(self, *args):
-        string = self.get_setting().get_value()
-
-        if string:
+        if string := self.get_setting().get_value():
             self.set_font_name(string)
 
     def reset(self):
@@ -308,7 +303,7 @@ class FontButton(Gtk.FontButton, SettingWidget):
 
 class Scale(Gtk.Scale, SettingWidget):
     def __str__(self):
-        return '<Scale with key: %s>' % self.get_setting().key
+        return f'<Scale with key: {self.get_setting().key}>'
 
     def __init__(self, key=None, default=None, min=None, max=None, step=None, type=int, digits=0,
                  reverse=False, orientation=Gtk.Orientation.HORIZONTAL, backend='gconf'):
@@ -373,7 +368,7 @@ class Scale(Gtk.Scale, SettingWidget):
 
 class SpinButton(Gtk.SpinButton, SettingWidget):
     def __str__(self):
-        return '<SpinButton with key: %s>' % self.get_setting().key
+        return f'<SpinButton with key: {self.get_setting().key}>'
 
     def __init__(self, key, default=None, min=0, max=0, step=0, backend='gconf'):
         SettingWidget.__init__(self, key=key, default=default, type=int, backend=backend)
@@ -508,7 +503,7 @@ class KeyGrabber(Gtk.Button):
                 self.emit("current-changed", key, mods)
             Gtk.Button.set_label(self, self.label)
             return
-        if key == None and mods == None:
+        if key is None and mods is None:
             key = self.key
             mods = self.mods
         label = Gtk.accelerator_name(key, mods)
@@ -519,7 +514,7 @@ class KeyGrabber(Gtk.Button):
 
 class ColorButton(Gtk.ColorButton, SettingWidget):
     def __str__(self):
-        return '<ColorButton with key: %s>' % self.get_setting().key
+        return f'<ColorButton with key: {self.get_setting().key}>'
 
     def __init__(self, key=None, default=None, backend='gconf'):
         GObject.GObject.__init__(self)

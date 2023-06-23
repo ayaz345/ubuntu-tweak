@@ -15,9 +15,9 @@ class HardwareInfo(Clip):
 
         cpumodel = _('Unknown')
 
-        if os.uname()[4][0:3] == "ppc":
+        if os.uname()[4][:3] == "ppc":
             for element in file("/proc/cpuinfo"):
-                if element.split(":")[0][0:3] == "cpu":
+                if element.split(":")[0][:3] == "cpu":
                     cpumodel = element.split(":")[1].strip()
         else:
             for element in file("/proc/cpuinfo"):

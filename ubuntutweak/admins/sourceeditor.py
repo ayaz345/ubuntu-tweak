@@ -96,7 +96,7 @@ class SourceView(Gtk.TextView):
                 if list is None:
                     self.insert_line(buffer, iter)
                 elif has_end_blank:
-                    list[-1] = list[-1] + ' '
+                    list[-1] = f'{list[-1]} '
                 if len(list) >= 4:
                     type, uri, distro, component = list[0], list[1], list[2], list[3:]
 
@@ -251,7 +251,7 @@ class SourceEditor(TweakModule):
             self.source_combo.set_active(0)
             return
 
-        files = glob.glob(SOURCE_LIST_D + '/*.list')
+        files = glob.glob(f'{SOURCE_LIST_D}/*.list')
         files.sort()
 
         for file in files:
@@ -270,7 +270,7 @@ class SourceEditor(TweakModule):
 
             self.backup_model.clear()
 
-            files = glob.glob(source_list + '.*')
+            files = glob.glob(f'{source_list}.*')
             files.sort(cmp=file_cmp, reverse=True)
 
             for path in files:
@@ -334,15 +334,13 @@ class SourceEditor(TweakModule):
             list_path = model[iter][0]
             list_name = model[iter][1]
 
-            backup_iter = self.backup_combobox.get_active_iter()
-
-            if backup_iter:
+            if backup_iter := self.backup_combobox.get_active_iter():
                 backup_path = self.backup_model[backup_iter][0]
                 backup_name = self.backup_model[backup_iter][1]
 
                 dialog = QuestionDialog(message=_('Would you like to recover the '
                                         'backup "<b>%(backup_name)s</b>" for "<b>%(list_name)s</b>"?') % \
-                                                {'backup_name': backup_name,
+                                                    {'backup_name': backup_name,
                                                  'list_name': list_name})
                 response = dialog.run()
                 dialog.destroy()

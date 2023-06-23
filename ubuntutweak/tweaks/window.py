@@ -85,44 +85,43 @@ class Window(TweakModule):
                             enable_reset=True,
                             backend='gconf',
                             texts=[_('None'), _('Maximize'), \
-                                    _('Minimize'), _('Roll up'), \
-                                    _('Lower'), _('Menu')],
+                                        _('Minimize'), _('Roll up'), \
+                                        _('Lower'), _('Menu')],
                             values=['none', 'toggle_maximize', \
-                                    'minimize', 'toggle_shade', \
-                                    'lower', 'menu']),
+                                        'minimize', 'toggle_shade', \
+                                        'lower', 'menu']),
                         WidgetFactory.create('ComboBox',
                             label=self.utext_titlebar_middle,
                             key='/apps/metacity/general/action_middle_click_titlebar',
                             enable_reset=True,
                             backend="gconf",
                             texts=[_('None'), _('Maximize'), \
-                                   _('Maximize Horizontally'), \
-                                   _('Maximize Vertically'), \
-                                   _('Minimize'), _('Roll up'), \
-                                   _('Lower'), _('Menu')],
+                                       _('Maximize Horizontally'), \
+                                       _('Maximize Vertically'), \
+                                       _('Minimize'), _('Roll up'), \
+                                       _('Lower'), _('Menu')],
                                    values=['none', 'toggle_maximize', \
-                                           'toggle_maximize_horizontally', \
-                                           'toggle_maximize_vertically', \
-                                           'minimize', 'toggle_shade', \
-                                           'lower', 'menu']),
+                                               'toggle_maximize_horizontally', \
+                                               'toggle_maximize_vertically', \
+                                               'minimize', 'toggle_shade', \
+                                               'lower', 'menu']),
                         WidgetFactory.create('ComboBox',
                             label=self.utext_titlebar_right,
                             key='/apps/metacity/general/action_right_click_titlebar',
                             enable_reset=True,
                             backend="gconf",
                             texts=[_('None'), _('Maximize'), \
-                                    _('Maximize Horizontally'), \
-                                    _('Maximize Vertically'), \
-                                    _('Minimize'), _('Roll up'), \
-                                    _('Lower'), _('Menu')],
+                                        _('Maximize Horizontally'), \
+                                        _('Maximize Vertically'), \
+                                        _('Minimize'), _('Roll up'), \
+                                        _('Lower'), _('Menu')],
                             values=['none', 'toggle_maximize', \
-                                    'toggle_maximize_horizontally', \
-                                    'toggle_maximize_vertically', \
-                                    'minimize', 'toggle_shade', \
-                                    'lower', 'menu']),
+                                        'toggle_maximize_horizontally', \
+                                        'toggle_maximize_vertically', \
+                                        'minimize', 'toggle_shade', \
+                                        'lower', 'menu']),
                     )
 
-            self.add_start(box)
         else:
             box = GridPack(
                         (Gtk.Label(self.utext_window_button),
@@ -142,36 +141,37 @@ class Window(TweakModule):
                             enable_reset=True,
                             backend='gsettings',
                             texts=[_('None'), _('Maximize'), \
-                                   _('Minimize'), _('Roll up'), \
-                                   _('Lower'), _('Menu')],
+                                       _('Minimize'), _('Roll up'), \
+                                       _('Lower'), _('Menu')],
                             values=['none', 'toggle-maximize', \
-                                    'minimize', 'toggle-shade', \
-                                    'lower', 'menu']),
+                                        'minimize', 'toggle-shade', \
+                                        'lower', 'menu']),
                         WidgetFactory.create('ComboBox',
                             label=self.utext_titlebar_middle,
                             key='org.gnome.desktop.wm.preferences.action-middle-click-titlebar',
                             enable_reset=True,
                             backend="gsettings",
                             texts=[_('None'), _('Maximize'), \
-                                   _('Minimize'), _('Roll up'), \
-                                   _('Lower'), _('Menu')],
+                                       _('Minimize'), _('Roll up'), \
+                                       _('Lower'), _('Menu')],
                             values=['none', 'toggle-maximize', \
-                                    'minimize', 'toggle-shade', \
-                                    'lower', 'menu']),
+                                        'minimize', 'toggle-shade', \
+                                        'lower', 'menu']),
                         WidgetFactory.create('ComboBox',
                             label=self.utext_titlebar_right,
                             key='org.gnome.desktop.wm.preferences.action-right-click-titlebar',
                             enable_reset=True,
                             backend="gsettings",
                             texts=[_('None'), _('Maximize'), \
-                                   _('Minimize'), _('Roll up'), \
-                                   _('Lower'), _('Menu')],
+                                       _('Minimize'), _('Roll up'), \
+                                       _('Lower'), _('Menu')],
                             values=['none', 'toggle-maximize', \
-                                    'minimize', 'toggle-shade', \
-                                    'lower', 'menu']),
+                                        'minimize', 'toggle-shade', \
+                                        'lower', 'menu']),
                         )
 
-            self.add_start(box)
+
+        self.add_start(box)
 
     def on_switch_activate(self, widget, value):
         if widget.get_active():

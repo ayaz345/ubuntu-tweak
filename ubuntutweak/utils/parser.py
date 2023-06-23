@@ -24,7 +24,4 @@ class Parser(dict):
 
     def get_by_lang(self, key, field):
         value = self[key][field]
-        if consts.LANG in value.keys():
-            return value[consts.LANG]
-        else:
-            return value['raw']
+        return value[consts.LANG] if consts.LANG in value.keys() else value['raw']

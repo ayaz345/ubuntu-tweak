@@ -58,8 +58,9 @@ class LoginSettings(TweakModule):
 
         notes_label = Gtk.Label()
         notes_label.set_property('halign', Gtk.Align.START)
-        notes_label.set_markup('<span size="smaller">%s</span>' % \
-                _('Note: you may need to reboot to take effect'))
+        notes_label.set_markup(
+            f"""<span size="smaller">{_('Note: you may need to reboot to take effect')}</span>"""
+        )
         notes_label._ut_left = 1
 
         self.login_box = GridPack(
@@ -105,9 +106,7 @@ class LoginSettings(TweakModule):
 
     def _setup_logo_image(self):
         self._greeter_logo = SystemConfigSetting('50_unity-greeter.gschema.override::com.canonical.unity-greeter#logo', type=str)
-        logo_path = self._greeter_logo.get_value()
-
-        if logo_path:
+        if logo_path := self._greeter_logo.get_value():
             self.logo_image.set_from_file(logo_path)
 
     def _setup_background_image(self):
@@ -207,7 +206,7 @@ class LoginSettings(TweakModule):
 
         if response == Gtk.ResponseType.ACCEPT:
             filename = dialog.get_filename()
-            log.debug("Get background file, the path is: %s" % filename)
+            log.debug(f"Get background file, the path is: {filename}")
             dialog.destroy()
 
             if filename:

@@ -65,11 +65,9 @@ class CateView(Gtk.TreeView):
 
     def _create_model(self):
         '''The model is icon, title and the list reference'''
-        model = Gtk.ListStore(GdkPixbuf.Pixbuf,
-                              GObject.TYPE_STRING,
-                              GObject.TYPE_STRING)
-
-        return model
+        return Gtk.ListStore(
+            GdkPixbuf.Pixbuf, GObject.TYPE_STRING, GObject.TYPE_STRING
+        )
 
     def _add_columns(self):
         column = Gtk.TreeViewColumn(title=_('Categories'))
@@ -116,13 +114,13 @@ class TypeView(Gtk.TreeView):
 
     def _create_model(self):
         '''The model is icon, title and the list reference'''
-        model = Gtk.ListStore(GObject.TYPE_STRING,
-                              GdkPixbuf.Pixbuf,
-                              GObject.TYPE_STRING,
-                              GdkPixbuf.Pixbuf,
-                              GObject.TYPE_STRING)
-        
-        return model
+        return Gtk.ListStore(
+            GObject.TYPE_STRING,
+            GdkPixbuf.Pixbuf,
+            GObject.TYPE_STRING,
+            GdkPixbuf.Pixbuf,
+            GObject.TYPE_STRING,
+        )
 
     def _add_columns(self):
         column = Gtk.TreeViewColumn(_('File Type'))
@@ -169,12 +167,10 @@ class TypeView(Gtk.TreeView):
 
             pixbuf = icon.get_from_mime_type(mime_type)
             description = Gio.content_type_get_description(mime_type)
-            app = Gio.app_info_get_default_for_type(mime_type, False)
-
-            if app:
+            if app := Gio.app_info_get_default_for_type(mime_type, False):
                 appname = app.get_name()
                 applogo = icon.get_from_app(app)
-            elif all and not app:
+            elif all:
                 appname = _('None')
                 applogo = None
             else:
@@ -189,9 +185,7 @@ class TypeView(Gtk.TreeView):
         this_type = model.get_value(iter, self.TYPE_MIME)
 
         if this_type == type:
-            app = Gio.app_info_get_default_for_type(type, False)
-
-            if app:
+            if app := Gio.app_info_get_default_for_type(type, False):
                 appname = app.get_name()
                 applogo = icon.get_from_app(app)
 
@@ -251,10 +245,7 @@ class AddAppDialog(GObject.GObject):
 
         command = self.command_entry.get_text()
 
-        if app_info and command == app_command:
-            return app_info
-        else:
-            return command
+        return app_info if app_info and command == app_command else command
 
     def on_browse_button_clicked(self, widget):
         dialog = Gtk.FileChooserDialog(_('Choose an application'),
@@ -272,9 +263,7 @@ class AddAppDialog(GObject.GObject):
         model, iter = widget.get_selected()
         if iter:
             appinfo = model.get_value(iter, self.ADD_TYPE_APPINFO)
-            description = appinfo.get_description()
-
-            if description:
+            if description := appinfo.get_description():
                 self.description_label.set_label(description)
             else:
                 self.description_label.set_label('')
@@ -383,9 +372,9 @@ class TypeEditDialog(GObject.GObject):
         if dialog.run() == Gtk.ResponseType.ACCEPT:
             we = dialog.get_command_or_appinfo()
 
-            log.debug("Get get_command_or_appinfo: %s" % we)
+            log.debug(f"Get get_command_or_appinfo: {we}")
             if type(we) == Gio.DesktopAppInfo:
-                log.debug("Get DesktopAppInfo: %s" % we)
+                log.debug(f"Get DesktopAppInfo: {we}")
                 app = we
             else:
                 desktop_id = self._create_desktop_file_from_command(we)
@@ -401,7 +390,7 @@ class TypeEditDialog(GObject.GObject):
 
     def _create_desktop_file_from_command(self, command):
         basename = os.path.basename(command)
-        path = os.path.expanduser('~/.local/share/applications/%s.desktop' % basename)
+        path = os.path.expanduser(f'~/.local/share/applications/{basename}.desktop')
 
         desktop = DesktopEntry()
         desktop.addGroup('Desktop Entry')
@@ -413,7 +402,7 @@ class TypeEditDialog(GObject.GObject):
         desktop.set('X-Ubuntu-Tweak', 'true')
         desktop.write(path)
 
-        return '%s.desktop' % basename
+        return f'{basename}.desktop'
 
     def on_remove_button_clicked(self, widget):
         model, iter = self.type_edit_view.get_selection().get_selected()
@@ -424,9 +413,7 @@ class TypeEditDialog(GObject.GObject):
                                                     self.EDIT_TYPE_TYPE,
                                                     self.EDIT_TYPE_APPINFO)
 
-            log.debug("remove the type: %s for %s, status: %s" % (mime_type,
-                                                                  appinfo,
-                                                                  enabled))
+            log.debug(f"remove the type: {mime_type} for {appinfo}, status: {enabled}")
 
             # first try to set mime to next app then remove
             if enabled and model.iter_next(iter):
@@ -494,11 +481,7 @@ class TypeEditDialog(GObject.GObject):
             for appname, appinfo in app_dict.items():
                 applogo = icon.get_from_app(appinfo)
 
-                if len(default_list) == 1 and appname in default_list:
-                    enabled = True
-                else:
-                    enabled = False
-
+                enabled = len(default_list) == 1 and appname in default_list
                 self.model.append((enabled, '', appinfo, applogo, appname))
         else:
             type = self.types[0]
@@ -530,8 +513,7 @@ class TypeEditDialog(GObject.GObject):
             self.emit('update', self.types)
 
     def cancenl_last_toggle(self, model, path, iter, data=None):
-        enable = model.get(iter, self.EDIT_TYPE_ENABLE)
-        if enable:
+        if enable := model.get(iter, self.EDIT_TYPE_ENABLE):
             model.set_value(iter, self.EDIT_TYPE_ENABLE, not enable)
 
     def on_dialog_destroy(self, widget):
@@ -644,7 +626,7 @@ class FileTypeManager(TweakModule):
             return
 
     def on_mime_type_update(self, widget, types):
-        log.debug("on_mime_type_update: %s" % types)
+        log.debug(f"on_mime_type_update: {types}")
 
         for filetype in types:
             self.typeview.update_for_type(filetype)

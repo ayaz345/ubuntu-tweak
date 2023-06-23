@@ -73,8 +73,9 @@ SOURCE_VERSION_URL = utdata.get_version_url('/sourcecenter_version/')
 UPGRADE_DICT = {}
 
 def get_source_data_url():
-    return utdata.get_download_url('/media/utdata/sourcecenter-%s.tar.gz' %
-                                   VERSION_SETTING.get_value())
+    return utdata.get_download_url(
+        f'/media/utdata/sourcecenter-{VERSION_SETTING.get_value()}.tar.gz'
+    )
 
 def get_source_logo_from_filename(file_name):
     path = os.path.join(SOURCE_ROOT, file_name)
@@ -119,14 +120,13 @@ class SourceParser(Parser):
 
                 for id in distros:
                     codename = distro_parser.get_codename(id)
-                    if codename in system.UBUNTU_CODENAMES:
-                        if system.CODENAME == codename:
-                            distro_values = codename
-                            break
-                    else:
+                    if (
+                        codename in system.UBUNTU_CODENAMES
+                        and system.CODENAME == codename
+                        or codename not in system.UBUNTU_CODENAMES
+                    ):
                         distro_values = codename
                         break
-
                 if distro_values == '':
                     continue
 
@@ -147,10 +147,7 @@ class SourceParser(Parser):
                         self.reverse_depends[depend_id] = [id]
 
     def has_reverse_depends(self, id):
-        if id in self.reverse_depends.keys():
-            return True
-        else:
-            return False
+        return id in self.reverse_depends.keys()
 
     def get_reverse_depends(self, id):
         return self.reverse_depends[id]
@@ -159,16 +156,10 @@ class SourceParser(Parser):
         return self[key]['slug']
 
     def get_conflicts(self, key):
-        if self[key].has_key('conflicts'):
-            return self[key]['conflicts']
-        else:
-            return None
+        return self[key]['conflicts'] if self[key].has_key('conflicts') else None
 
     def get_dependencies(self, key):
-        if self[key].has_key('dependencies'):
-            return self[key]['dependencies']
-        else:
-            return None
+        return self[key]['dependencies'] if self[key].has_key('dependencies') else None
 
     def get_summary(self, key):
         return self.get_by_lang(key, 'summary')
@@ -210,18 +201,15 @@ class SourceParser(Parser):
         comment = self.get_name(key)
 
         if ppa.is_ppa(url):
-            file_name = '%s-%s' % (ppa.get_source_file_name(url), distro)
+            file_name = f'{ppa.get_source_file_name(url)}-{distro}'
         else:
             file_name = self.get_slug(key)
 
         if gpg_key:
             proxy.add_apt_key_from_content(gpg_key)
 
-        if not comps and distro:
-            distro = distro + '/'
-        elif not comps and not distro:
-            distro = './'
-
+        if not comps:
+            distro = f'{distro}/' if distro else './'
         result = proxy.set_separated_entry(url, distro, comps,
                                            comment, enable, file_name)
 
@@ -238,15 +226,12 @@ class SourceStatus(StatusProvider):
             slug = parser.get_slug(key)
             key = slug
             if init:
-                log.debug('SourceStatus first init, set %s as read' % id)
-                self.get_data()['apps'][key] = {}
-                self.get_data()['apps'][key]['read'] = True
+                log.debug(f'SourceStatus first init, set {id} as read')
+                self.get_data()['apps'][key] = {'read': True}
                 self.get_data()['apps'][key]['cate'] = parser.get_category(id)
-            else:
-                if key not in self.get_data()['apps']:
-                    self.get_data()['apps'][key] = {}
-                    self.get_data()['apps'][key]['read'] = False
-                    self.get_data()['apps'][key]['cate'] = parser.get_category(id)
+            elif key not in self.get_data()['apps']:
+                self.get_data()['apps'][key] = {'read': False}
+                self.get_data()['apps'][key]['cate'] = parser.get_category(id)
 
         if init and parser.keys():
             log.debug('Init finish, SourceStatus set init to False')
@@ -340,9 +325,7 @@ class DowngradeView(Gtk.TreeView):
                         else:
                             pkg_dict[pkg] = [ppa_url]
 
-        pkg_map = self.get_downgradeable_pkgs(pkg_dict)
-
-        if pkg_map:
+        if pkg_map := self.get_downgradeable_pkgs(pkg_dict):
             log.debug("Start insert pkg_map to model: %s\n" % str(pkg_map))
             for pkg, (p_verion, s_verion) in pkg_map.items():
                 model.append((pkg, p_verion, s_verion))
@@ -352,8 +335,8 @@ class DowngradeView(Gtk.TreeView):
         downgrade_list = []
         for row in model:
             pkg, version = row[self.COLUMN_PKG], row[self.COLUMN_SYSTEM_VERSION]
-            downgrade_list.append("%s=%s" % (pkg, version))
-        log.debug("The package to downgrade is %s" % str(downgrade_list))
+            downgrade_list.append(f"{pkg}={version}")
+        log.debug(f"The package to downgrade is {downgrade_list}")
         return downgrade_list
 
     def get_downgradeable_pkgs(self, ppa_dict):
@@ -365,13 +348,15 @@ class DowngradeView(Gtk.TreeView):
             for origin in version.origins:
                 if origin.origin:
                     if origin.origin not in origins:
-                        log.debug("The origin %s is not in %s, so end the loop" % (origin.origin, str(origins)))
+                        log.debug(f"The origin {origin.origin} is not in {origins}, so end the loop")
                         match = True
                         break
 
             if match:
                 system_version = version.version
-                log.debug("Found match url, the system_version is %s, now iter to system version" % system_version)
+                log.debug(
+                    f"Found match url, the system_version is {system_version}, now iter to system version"
+                )
 
             return system_version
 
@@ -384,20 +369,22 @@ class DowngradeView(Gtk.TreeView):
                 for origin in version.origins:
                     if origin.origin:
                         if origin.origin not in origins:
-                            log.debug("The origin %s is not in %s, so end the loop" % (origin.origin, str(origins)))
+                            log.debug(f"The origin {origin.origin} is not in {origins}, so end the loop")
                             match = False
                             break
 
                 if match:
                     ppa_version = version.version
-                    log.debug("Found match url, the ppa_version is %s, now iter to system version" % ppa_version)
+                    log.debug(
+                        f"Found match url, the ppa_version is {ppa_version}, now iter to system version"
+                    )
 
             return ppa_version
 
         log.debug("Check downgrade information")
         downgrade_dict = {}
         for pkg, urls in ppa_dict.items():
-            log.debug("The package is: %s, PPA URL is: %s" % (pkg, str(urls)))
+            log.debug(f"The package is: {pkg}, PPA URL is: {str(urls)}")
 
             if pkg not in AptWorker.get_cache():
                 log.debug("    package isn't available, continue next...\n")
@@ -416,7 +403,7 @@ class DowngradeView(Gtk.TreeView):
                 for version in versions:
                     try:
                         #FIXME option to remove the package
-                        log.debug("Version uri is %s" % version.uri)
+                        log.debug(f"Version uri is {version.uri}")
 
                         # Switch FLAG
                         if FLAG == 'PPA':
@@ -433,7 +420,7 @@ class DowngradeView(Gtk.TreeView):
                     except StopIteration:
                         pass
             except NoNeedDowngradeException:
-                log.debug("Catch NoNeedDowngradeException, so pass this package: %s" % pkg)
+                log.debug(f"Catch NoNeedDowngradeException, so pass this package: {pkg}")
                 continue
             log.debug("\n")
         return downgrade_dict
@@ -465,19 +452,19 @@ class UpdateView(AppView):
         cates is a dict to find what the category the pkg is
         '''
         model = self.get_model()
-        length = len(pkgs)
-
         if pkgs:
             iter = model.append()
-            model.set(iter,
-                      self.COLUMN_DISPLAY,
-                      '<span size="large" weight="bold">%s</span>' %
-                      ngettext('%d Package Update Available',
-                               '%d Package Updates Available',
-                               length) % length)
+            length = len(pkgs)
 
-            apps = []
+            model.set(
+                iter,
+                self.COLUMN_DISPLAY,
+                f"""<span size="large" weight="bold">{ngettext('%d Package Update Available', '%d Package Updates Available', length)}</span>"""
+                % length,
+            )
+
             updates = []
+            apps = []
             for pkg in pkgs:
                 if pkg in APP_PARSER:
                     apps.append(pkg)
@@ -507,10 +494,11 @@ class UpdateView(AppView):
                 self.append_update(False, package.name, package.summary)
         else:
             iter = model.append()
-            model.set(iter,
-                      self.COLUMN_DISPLAY,
-                        '<span size="large" weight="bold">%s</span>' %
-                        _('No Available Package Updates'))
+            model.set(
+                iter,
+                self.COLUMN_DISPLAY,
+                f"""<span size="large" weight="bold">{_('No Available Package Updates')}</span>""",
+            )
 
     def select_all_action(self, active):
         self.to_rm = []
@@ -569,29 +557,26 @@ class SourcesView(Gtk.TreeView):
         return SourcesList()
 
     def __create_model(self):
-        model = Gtk.ListStore(GObject.TYPE_BOOLEAN,
-                              GObject.TYPE_INT,
-                              GObject.TYPE_INT,
-                              GObject.TYPE_STRING,
-                              GObject.TYPE_STRING,
-                              GObject.TYPE_STRING,
-                              GObject.TYPE_STRING,
-                              GdkPixbuf.Pixbuf,
-                              GObject.TYPE_STRING,
-                              GObject.TYPE_STRING,
-                              GObject.TYPE_STRING,
-                              GObject.TYPE_STRING,
-                              GObject.TYPE_STRING)
-
-        return model
+        return Gtk.ListStore(
+            GObject.TYPE_BOOLEAN,
+            GObject.TYPE_INT,
+            GObject.TYPE_INT,
+            GObject.TYPE_STRING,
+            GObject.TYPE_STRING,
+            GObject.TYPE_STRING,
+            GObject.TYPE_STRING,
+            GdkPixbuf.Pixbuf,
+            GObject.TYPE_STRING,
+            GObject.TYPE_STRING,
+            GObject.TYPE_STRING,
+            GObject.TYPE_STRING,
+            GObject.TYPE_STRING,
+        )
 
     def on_visible_filter(self, model, iter, data=None):
-        log.debug("on_visible_filter: %s" % self.model.get_value(iter, self.COLUMN_NAME))
+        log.debug(f"on_visible_filter: {self.model.get_value(iter, self.COLUMN_NAME)}")
         category = self.model.get_value(iter, self.COLUMN_CATE)
-        if self.filter == None or self.filter == category:
-            return True
-        else:
-            return False
+        return self.filter is None or self.filter == category
 
     def _add_column(self):
         renderer = Gtk.CellRendererToggle()
@@ -624,12 +609,11 @@ class SourcesView(Gtk.TreeView):
     def update_source_model(self, find='all', limit=-1, only_enabled=False):
         self.model.clear()
         sourceslist = self.get_sourceslist()
-        enabled_list = []
-
-        for source in sourceslist.list:
-            if source.type == 'deb' and not source.disabled:
-                enabled_list.append(source.uri)
-
+        enabled_list = [
+            source.uri
+            for source in sourceslist.list
+            if source.type == 'deb' and not source.disabled
+        ]
         if self._status:
             self._status.load_objects_from_parser(SOURCE_PARSER)
 
@@ -645,9 +629,7 @@ class SourcesView(Gtk.TreeView):
                 enabled_list.remove(url)
 
             if only_enabled:
-                if not enabled:
-                    continue
-                elif not ppa.is_ppa(url):
+                if not enabled or enabled and not ppa.is_ppa(url):
                     continue
                 else:
                     enabled = not enabled
@@ -656,7 +638,7 @@ class SourcesView(Gtk.TreeView):
             comps = SOURCE_PARSER.get_comps(id)
             distro = SOURCE_PARSER.get_distro(id)
             category = SOURCE_PARSER.get_category(id)
-            
+
             if find != 'all' and category != find:
                 continue
 
@@ -731,10 +713,14 @@ class SourcesView(Gtk.TreeView):
                             '<b>%s</b>\n%s' % (name, comment))
 
     def get_sourcelist_status(self, url):
-        for source in self.get_sourceslist():
-            if url in source.str() and source.type == 'deb':
-                return not source.disabled
-        return False
+        return next(
+            (
+                not source.disabled
+                for source in self.get_sourceslist()
+                if url in source.str() and source.type == 'deb'
+            ),
+            False,
+        )
 
     @log_func(log)
     def on_enable_toggled(self, cell, path):
@@ -761,16 +747,19 @@ class SourcesView(Gtk.TreeView):
                 for conflict_id in conflicts:
                     if self.get_source_enabled(conflict_id):
                         conflict_list.append(conflict_id)
-                        name_list = [r[self.COLUMN_NAME] for r in model if r[self.COLUMN_ID] == conflict_id]
-                        if name_list:
-                                conflict_name_list.extend(name_list)
+                        if name_list := [
+                            r[self.COLUMN_NAME]
+                            for r in model
+                            if r[self.COLUMN_ID] == conflict_id
+                        ]:
+                            conflict_name_list.extend(name_list)
 
                 if conflict_list and conflict_name_list:
                     full_name = ', '.join(conflict_name_list)
                     ErrorDialog(_('You can\'t enable this Source because'
                                   '<b>"%(SOURCE)s"</b> conflicts with it.\nTo '
                                   'continue you need to disable <b>"%(SOURCE)s"</b>' \
-                                  'first.') % {'SOURCE': full_name}).launch()
+                                      'first.') % {'SOURCE': full_name}).launch()
 
                     model.set(iter, self.COLUMN_ENABLED, enabled)
                     return
@@ -781,16 +770,19 @@ class SourcesView(Gtk.TreeView):
                 for depend_id in dependencies:
                     if self.get_source_enabled(depend_id) is False:
                         depend_list.append(depend_id)
-                        name_list = [r[self.COLUMN_NAME] for r in model if r[self.COLUMN_ID] == depend_id]
-                        if name_list:
-                                depend_name_list.extend(name_list)
+                        if name_list := [
+                            r[self.COLUMN_NAME]
+                            for r in model
+                            if r[self.COLUMN_ID] == depend_id
+                        ]:
+                            depend_name_list.extend(name_list)
 
                 if depend_list and depend_name_list:
                     full_name = ', '.join(depend_name_list)
 
                     dialog = QuestionDialog(title=_('Dependency Notice'),
                                             message= _('To enable this Source, You need to enable <b>"%s"</b> at first.\nDo you wish to continue?') \
-                                % full_name)
+                                    % full_name)
                     if dialog.run() == Gtk.ResponseType.YES:
                         for depend_id in depend_list:
                             self.set_source_enabled(depend_id)
@@ -807,9 +799,12 @@ class SourcesView(Gtk.TreeView):
                 for depend_id in SOURCE_PARSER.get_reverse_depends(id):
                     if self.get_source_enabled(depend_id):
                         depend_list.append(depend_id)
-                        name_list = [r[self.COLUMN_NAME] for r in model if r[self.COLUMN_ID] == depend_id]
-                        if name_list:
-                                depend_name_list.extend(name_list)
+                        if name_list := [
+                            r[self.COLUMN_NAME]
+                            for r in model
+                            if r[self.COLUMN_ID] == depend_id
+                        ]:
+                            depend_name_list.extend(name_list)
 
                 if depend_list and depend_name_list:
                     full_name = ', '.join(depend_name_list)
@@ -817,7 +812,7 @@ class SourcesView(Gtk.TreeView):
                     ErrorDialog(_('You can\'t disable this Source because '
                                 '<b>"%(SOURCE)s"</b> depends on it.\nTo continue '
                                 'you need to disable <b>"%(SOURCE)s"</b> first.') \
-                                     % {'SOURCE': full_name}).launch()
+                                         % {'SOURCE': full_name}).launch()
 
                     model.set(iter, self.COLUMN_ENABLED, enabled)
                     return
@@ -990,13 +985,12 @@ class SourceCenter(TweakModule):
 
     def check_source_upgradable(self):
         log.debug("The check source string is: \"%s\"" % self.__get_disable_string())
-        for source in SourcesList():
-            if self.__get_disable_string() in source.str() and \
-                    source.uri in UPGRADE_DICT and \
-                    source.disabled:
-                return True
-
-        return False
+        return any(
+            self.__get_disable_string() in source.str()
+            and source.uri in UPGRADE_DICT
+            and source.disabled
+            for source in SourcesList()
+        )
 
     def __get_disable_string(self):
         APP="update-manager"
@@ -1089,7 +1083,7 @@ class SourceCenter(TweakModule):
                 only_enabled = True
         else:
             find = 'all'
-        log.debug("Filter for %s" % find)
+        log.debug(f"Filter for {find}")
         self.sourceview.update_source_model(find=find,
                                      limit=limit,
                                      only_enabled=only_enabled)
@@ -1190,12 +1184,12 @@ class SourceCenter(TweakModule):
         set_busy(self)
         name_list = []
         url_list = []
-        log.debug("self.sourceview.to_purge: %s" % self.sourceview.to_purge)
+        log.debug(f"self.sourceview.to_purge: {self.sourceview.to_purge}")
         for url in self.sourceview.to_purge:
             name_list.append(ppa.get_short_name(url))
             url_list.append(url)
 
-        log.debug("PPAs to purge: url_list: %s" % url_list)
+        log.debug(f"PPAs to purge: url_list: {url_list}")
 
         package_view = DowngradeView(self)
         package_view.update_downgrade_model(url_list)
@@ -1246,7 +1240,7 @@ class SourceCenter(TweakModule):
         for url in url_list:
             #TODO remove vendor key
             result = proxy.purge_source(url, '')
-            log.debug("Set source: %s to %s" % (url, str(result)))
+            log.debug(f"Set source: {url} to {str(result)}")
         self.sourceview.to_purge = []
         self.update_sourceview()
 

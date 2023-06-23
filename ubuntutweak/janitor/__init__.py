@@ -174,7 +174,7 @@ class JanitorCachePlugin(JanitorPlugin):
                     if os.path.exists(new_root_path):
                         if os.path.isdir(new_root_path):
                             try:
-                                size = os.popen('du -bs "%s"' % new_root_path).read().split()[0]
+                                size = os.popen(f'du -bs "{new_root_path}"').read().split()[0]
                             except:
                                 size = 0
                         else:
@@ -213,16 +213,12 @@ class JanitorCachePlugin(JanitorPlugin):
         widget.destroy()
 
     def get_cruft_by_glob(self):
-        cruft_list = glob.glob('%s/%s' % (self.get_path(), self.pattern))
+        cruft_list = glob.glob(f'{self.get_path()}/{self.pattern}')
         cruft_list.sort()
         size = 0
-        count = 0
-
-        for full_path in cruft_list:
+        for count, full_path in enumerate(cruft_list, start=1):
             current_size = os.path.getsize(full_path)
             size += current_size
-            count += 1
-
             self.emit('find_object',
                       CacheObject(os.path.basename(full_path), full_path, current_size),
                       count)
@@ -275,7 +271,7 @@ class JanitorCachePlugin(JanitorPlugin):
         if count:
             return '[%d] %s' % (count, self.__title__)
         else:
-            return '%s (%s)' % (self.__title__, _('No cache to be cleaned'))
+            return f"{self.__title__} ({_('No cache to be cleaned')})"
 
 
 class JanitorPage(Gtk.VBox, GuiBuilder):
@@ -340,12 +336,14 @@ class JanitorPage(Gtk.VBox, GuiBuilder):
         if 'red' in display:
             plugin = self.result_model[iter][self.RESULT_PLUGIN]
             error = plugin.get_property('error')
-            self.result_model[iter][self.RESULT_DISPLAY] = '<span color="red"><b>%s</b></span>' % error
+            self.result_model[iter][
+                self.RESULT_DISPLAY
+            ] = f'<span color="red"><b>{error}</b></span>'
         elif hasattr(cruft, 'get_path'):
             path = cruft.get_path()
             if not os.path.isdir(path):
                 path = os.path.dirname(path)
-            os.system("xdg-open '%s' &" % path)
+            os.system(f"xdg-open '{path}' &")
 
     def setup_ui_tasks(self, widget):
         self.janitor_model.set_sort_column_id(self.JANITOR_NAME, Gtk.SortType.ASCENDING)
@@ -431,7 +429,7 @@ class JanitorPage(Gtk.VBox, GuiBuilder):
             for row in self.result_model:
                 if row[self.RESULT_PLUGIN] == plugin:
                     self.result_view.get_selection().select_path(row.path)
-                    log.debug("scroll_to_cell: %s" % row.path)
+                    log.debug(f"scroll_to_cell: {row.path}")
                     self.result_view.scroll_to_cell(row.path)
 
     def _is_scanning_or_cleaning(self):
@@ -499,9 +497,7 @@ class JanitorPage(Gtk.VBox, GuiBuilder):
         self._update_clean_button_sensitive()
 
     def _check_child_is_all_the_same(self, model, iter, column_id, status):
-        iter = model.iter_parent(iter)
-
-        if iter:
+        if iter := model.iter_parent(iter):
             child_iter = model.iter_children(iter)
 
             while child_iter:
@@ -565,18 +561,24 @@ class JanitorPage(Gtk.VBox, GuiBuilder):
         plugin = self.janitor_model[plugin_iter][self.JANITOR_PLUGIN]
         plugin.set_property('scan_finished', False)
 
-        log.debug("do_scan_task for %s for status: %s" % (plugin, checked))
+        log.debug(f"do_scan_task for {plugin} for status: {checked}")
 
         if checked:
-            log.info('Scan cruft for plugin: %s' % plugin.get_name())
+            log.info(f'Scan cruft for plugin: {plugin.get_name()}')
 
-            iter = self.result_model.append(None, (None,
-                                                   None,
-                                                   plugin.get_title(),
-                                                   '<b>%s</b>' % _('Scanning cruft for "%s"...') % plugin.get_title(),
-                                                   None,
-                                                   plugin,
-                                                   None))
+            iter = self.result_model.append(
+                None,
+                (
+                    None,
+                    None,
+                    plugin.get_title(),
+                    f"""<b>{_('Scanning cruft for "%s"...')}</b>"""
+                    % plugin.get_title(),
+                    None,
+                    plugin,
+                    None,
+                ),
+            )
 
             self.janitor_model[plugin_iter][self.JANITOR_SPINNER_ACTIVE] = True
             self.janitor_model[plugin_iter][self.JANITOR_SPINNER_PULSE] = 0
@@ -620,7 +622,9 @@ class JanitorPage(Gtk.VBox, GuiBuilder):
                             self._scan_handler,
                             self._error_handler):
                 if plugin.handler_is_connected(handler):
-                    log.debug("Disconnect the cleaned signal, or it will clean many times: %s" % plugin)
+                    log.debug(
+                        f"Disconnect the cleaned signal, or it will clean many times: {plugin}"
+                    )
                     plugin.disconnect(handler)
 
             self.janitor_model[plugin_iter][self.JANITOR_SPINNER_ACTIVE] = False
@@ -664,7 +668,9 @@ class JanitorPage(Gtk.VBox, GuiBuilder):
         if count:
             self.janitor_model[plugin_iter][self.JANITOR_DISPLAY] = "<b>[%d] %s</b>" % (count, plugin.get_title())
         else:
-            self.janitor_model[plugin_iter][self.JANITOR_DISPLAY] = "[0] %s" % plugin.get_title()
+            self.janitor_model[plugin_iter][
+                self.JANITOR_DISPLAY
+            ] = f"[0] {plugin.get_title()}"
 
     @post_ui
     def on_scan_finished(self, plugin, result, count, size, iters):
@@ -677,9 +683,13 @@ class JanitorPage(Gtk.VBox, GuiBuilder):
         if count == 0:
             self.result_model.remove(result_iter)
         else:
-            self.result_model[result_iter][self.RESULT_DISPLAY] = "<b>%s</b>" % plugin.get_summary(count)
+            self.result_model[result_iter][
+                self.RESULT_DISPLAY
+            ] = f"<b>{plugin.get_summary(count)}</b>"
             if size != 0:
-                self.result_model[result_iter][self.RESULT_DESC] = "<b>%s</b>" % filesizeformat(size)
+                self.result_model[result_iter][
+                    self.RESULT_DESC
+                ] = f"<b>{filesizeformat(size)}</b>"
 
         # Update the janitor title
         self._total_count += count
@@ -688,14 +698,19 @@ class JanitorPage(Gtk.VBox, GuiBuilder):
             self.janitor_model[plugin_iter][self.JANITOR_DISPLAY] = "<b>[%d] %s</b>" % (count, plugin.get_title())
             self.result_view.collapse_row(self.result_model.get_path(result_iter))
         else:
-            self.janitor_model[plugin_iter][self.JANITOR_DISPLAY] = "[0] %s" % plugin.get_title()
+            self.janitor_model[plugin_iter][
+                self.JANITOR_DISPLAY
+            ] = f"[0] {plugin.get_title()}"
 
     @post_ui
     def on_scan_error(self, plugin, error, iters):
         plugin_iter, result_iter = iters
 
         self.janitor_model[plugin_iter][self.JANITOR_ICON] = icon.get_from_name('error', size=16)
-        self.result_model[result_iter][self.RESULT_DISPLAY] = '<span color="red"><b>%s</b></span>' % _('Scan error for "%s", double-click to see details') % plugin.get_title()
+        self.result_model[result_iter][self.RESULT_DISPLAY] = (
+            f"""<span color="red"><b>{_('Scan error for "%s", double-click to see details')}</b></span>"""
+            % plugin.get_title()
+        )
 
         plugin.set_property('scan_finished', True)
         plugin.set_property('error', error)
@@ -744,7 +759,7 @@ class JanitorPage(Gtk.VBox, GuiBuilder):
                     if child_row[self.JANITOR_PLUGIN] == plugin:
                         plugin_iter = child_row.iter
 
-            log.debug("Call %s to clean cruft" % plugin)
+            log.debug(f"Call {plugin} to clean cruft")
             self._object_clean_handler = plugin.connect('object_cleaned',
                                                         self.on_plugin_object_cleaned,
                                                         (plugin_iter, cruft_dict))
@@ -760,7 +775,10 @@ class JanitorPage(Gtk.VBox, GuiBuilder):
                 if row[self.RESULT_PLUGIN] == plugin:
                     self.result_view.get_selection().select_path(row.path)
                     self.result_view.scroll_to_cell(row.path)
-                    row[self.RESULT_DISPLAY] = '<b>%s</b>' % _('Cleaning cruft for "%s"...') % plugin.get_title()
+                    row[self.RESULT_DISPLAY] = (
+                        f"""<b>{_('Cleaning cruft for "%s"...')}</b>"""
+                        % plugin.get_title()
+                    )
                     self.result_view.expand_row(self.result_model.get_path(row.iter), True)
 
             self.janitor_model[plugin_iter][self.JANITOR_SPINNER_ACTIVE] = True
@@ -779,7 +797,9 @@ class JanitorPage(Gtk.VBox, GuiBuilder):
 
         self.janitor_model[plugin_iter][self.JANITOR_SPINNER_PULSE] += 1
         if finished:
-            log.debug("Disconnect the cleaned signal for %s, or it will clean many times" % plugin)
+            log.debug(
+                f"Disconnect the cleaned signal for {plugin}, or it will clean many times"
+            )
             for handler in (self._object_clean_handler,
                             self._all_clean_handler,
                             self._error_handler):
@@ -803,17 +823,19 @@ class JanitorPage(Gtk.VBox, GuiBuilder):
         self.result_model.remove(cruft_dict[cruft])
 
         self.janitor_model[plugin_iter][self.JANITOR_DISPLAY]
-        remain = len(cruft_dict) - count
-
-        if remain:
+        if remain := len(cruft_dict) - count:
             self.janitor_model[plugin_iter][self.JANITOR_DISPLAY] = "<b>[%d] %s</b>" % (remain, plugin.get_title())
         else:
-            self.janitor_model[plugin_iter][self.JANITOR_DISPLAY] = "[0] %s" % plugin.get_title()
+            self.janitor_model[plugin_iter][
+                self.JANITOR_DISPLAY
+            ] = f"[0] {plugin.get_title()}"
 
     def on_plugin_cleaned(self, plugin, cleaned, plugin_iter):
         #TODO should accept the cruft_list
         plugin.set_property('clean_finished', True)
-        self.janitor_model[plugin_iter][self.JANITOR_DISPLAY] = "[0] %s" % plugin.get_title()
+        self.janitor_model[plugin_iter][
+            self.JANITOR_DISPLAY
+        ] = f"[0] {plugin.get_title()}"
 
     def on_clean_error(self, plugin, error, plugin_iter):
         #TODO response to user?
@@ -828,7 +850,7 @@ class JanitorPage(Gtk.VBox, GuiBuilder):
             self.scan_button.show()
 
     def icon_column_view_func(self, cell_layout, renderer, model, iter, id):
-        if model[iter][id] == None:
+        if model[iter][id] is None:
             renderer.set_property("visible", False)
         else:
             renderer.set_property("visible", True)
@@ -842,17 +864,22 @@ class JanitorPage(Gtk.VBox, GuiBuilder):
         plugin_to_load = self.plugins_setting.get_value()
 
         system_text = _('System')
-        iter = self.janitor_model.append(None, (None,
-                                                icon.get_from_name('distributor-logo'),
-                                                system_text,
-                                                "<b><big>%s</big></b>" % system_text,
-                                                None,
-                                                None,
-                                                None))
+        iter = self.janitor_model.append(
+            None,
+            (
+                None,
+                icon.get_from_name('distributor-logo'),
+                system_text,
+                f"<b><big>{system_text}</big></b>",
+                None,
+                None,
+                None,
+            ),
+        )
 
         for plugin in loader.get_modules_by_category('system'):
             if plugin.is_user_extension() and plugin.get_name() not in plugin_to_load:
-                log.debug("User extension: %s not in setting to load" % plugin.get_name())
+                log.debug(f"User extension: {plugin.get_name()} not in setting to load")
                 continue
             size_list.append(Gtk.Label(label=plugin.get_title()).get_layout().get_pixel_size()[0])
             self.janitor_model.append(iter, (False,
@@ -865,17 +892,22 @@ class JanitorPage(Gtk.VBox, GuiBuilder):
 
         personal_text = _('Personal')
 
-        iter = self.janitor_model.append(None, (None,
-                                                icon.get_from_name('system-users'),
-                                                personal_text,
-                                                "<b><big>%s</big></b>" % personal_text,
-                                                None,
-                                                None,
-                                                None))
+        iter = self.janitor_model.append(
+            None,
+            (
+                None,
+                icon.get_from_name('system-users'),
+                personal_text,
+                f"<b><big>{personal_text}</big></b>",
+                None,
+                None,
+                None,
+            ),
+        )
 
         for plugin in loader.get_modules_by_category('personal'):
             if plugin.is_user_extension() and plugin.get_name() not in plugin_to_load:
-                log.debug("User extension: %s not in setting to load" % plugin.get_name())
+                log.debug(f"User extension: {plugin.get_name()} not in setting to load")
                 continue
             size_list.append(Gtk.Label(label=plugin.get_title()).get_layout().get_pixel_size()[0])
             self.janitor_model.append(iter, (False,
@@ -888,17 +920,22 @@ class JanitorPage(Gtk.VBox, GuiBuilder):
 
         app_text = _('Apps')
 
-        iter = self.janitor_model.append(None, (None,
-                                                icon.get_from_name('gnome-app-install'),
-                                                app_text,
-                                                "<b><big>%s</big></b>" % app_text,
-                                                None,
-                                                None,
-                                                None))
+        iter = self.janitor_model.append(
+            None,
+            (
+                None,
+                icon.get_from_name('gnome-app-install'),
+                app_text,
+                f"<b><big>{app_text}</big></b>",
+                None,
+                None,
+                None,
+            ),
+        )
 
         for plugin in loader.get_modules_by_category('application'):
             if plugin.is_user_extension() and plugin.get_name() not in plugin_to_load:
-                log.debug("User extension: %s not in setting to load" % plugin.get_name())
+                log.debug(f"User extension: {plugin.get_name()} not in setting to load")
                 continue
             size_list.append(Gtk.Label(label=plugin.get_title()).get_layout().get_pixel_size()[0])
             self.janitor_model.append(iter, (False,

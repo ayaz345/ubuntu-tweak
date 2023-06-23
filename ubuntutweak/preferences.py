@@ -112,12 +112,8 @@ class PreferencesDialog(GuiBuilder):
         self._do_update_model(model, check_id, name_id, setting)
 
     def _do_update_model(self, model, check_id, name_id, setting):
-        model_list = []
-        for row in model:
-            if row[check_id]:
-                model_list.append(row[name_id])
-
-        log.debug("on_clip_toggle_render_toggled: %s" % model_list)
+        model_list = [row[name_id] for row in model if row[check_id]]
+        log.debug(f"on_clip_toggle_render_toggled: {model_list}")
         setting.set_value(model_list)
 
     def run(self, feature='overview'):
@@ -216,7 +212,7 @@ class PreferencesDialog(GuiBuilder):
         if filename:
             self.clips_location_setting.set_value(os.path.dirname(filename))
 
-            log.debug("Start to check the class in %s" % filename)
+            log.debug(f"Start to check the class in {filename}")
             if filename.endswith('.tar.gz'):
                 tar_file = TarFile(filename)
                 if tar_file.is_valid():
@@ -229,8 +225,14 @@ class PreferencesDialog(GuiBuilder):
                     target = os.path.join(ModuleLoader.get_user_extension_dir(feature), os.path.basename(temp_dir))
                     copy = True
                     if os.path.exists(target):
-                        dialog = QuestionDialog(message=_("Would you like to remove it then install again?"),
-                                                title=_('"%s" has already installed' % os.path.basename(target)))
+                        dialog = QuestionDialog(
+                            message=_(
+                                "Would you like to remove it then install again?"
+                            ),
+                            title=_(
+                                f'"{os.path.basename(target)}" has already installed'
+                            ),
+                        )
                         response = dialog.run()
                         dialog.destroy()
 
@@ -246,12 +248,11 @@ class PreferencesDialog(GuiBuilder):
                         shutil.rmtree(temp_dir)
                 else:
                     not_extension = True
+            elif ModuleLoader.is_target_class(filename, klass):
+                shutil.copy(filename, ModuleLoader.get_user_extension_dir(feature))
+                install_done = True
             else:
-                if ModuleLoader.is_target_class(filename, klass):
-                    shutil.copy(filename, ModuleLoader.get_user_extension_dir(feature))
-                    install_done = True
-                else:
-                    not_extension = True
+                not_extension = True
 
         if install_done:
             update_func(feature)
@@ -285,11 +286,11 @@ class PreferencesDialog(GuiBuilder):
                                         ClipClass.get_name()))
 
     def _update_feature_model(self, feature):
-        module_list = getattr(self, '%s_setting' % feature).get_value() or []
+        module_list = getattr(self, f'{feature}_setting').get_value() or []
 
         loader = ModuleLoader(feature, user_only=True)
 
-        model = getattr(self, '%s_model' % feature)
+        model = getattr(self, f'{feature}_model')
         model.clear()
 
         for name, klass in loader.module_table.items():

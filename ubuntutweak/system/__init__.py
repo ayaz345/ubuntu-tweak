@@ -53,10 +53,7 @@ def get_desktop_fullname():
     if desktop in desktop_dict:
         return desktop_dict[desktop]
     else:
-        if desktop:
-            return _('Unknown (%s)') % desktop
-        else:
-            return _('Unknown')
+        return _('Unknown (%s)') % desktop if desktop else _('Unknown')
 
 def get_app():
     '''Ubuntu Tweak 0.5.x'''

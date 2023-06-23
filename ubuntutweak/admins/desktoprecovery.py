@@ -37,7 +37,7 @@ log = logging.getLogger('DesktopRecovery')
 def build_backup_prefix(directory):
     name_prefix = os.path.join(CONFIG_ROOT, 'desktoprecovery', directory[1:]) + '/'
 
-    log.debug("build_backup_prefix: %s" % name_prefix)
+    log.debug(f"build_backup_prefix: {name_prefix}")
 
     if not os.path.exists(name_prefix):
         os.makedirs(name_prefix)
@@ -51,7 +51,7 @@ def build_backup_path(directory, name):
 
 def do_backup_task(directory, name):
     backup_name = build_backup_path(directory, name)
-    log.debug("the backup path is %s" % backup_name)
+    log.debug(f"the backup path is {backup_name}")
     backup_file = open(backup_name, 'w')
     process = Popen(['gconftool-2', '--dump', directory], stdout=backup_file)
     return process.communicate()
@@ -59,13 +59,13 @@ def do_backup_task(directory, name):
 
 def do_recover_task(path):
     process = Popen(['gconftool-2', '--load', path])
-    log.debug('Start setting recovery: %s' % path)
+    log.debug(f'Start setting recovery: {path}')
     return process.communicate()
 
 
 def do_reset_task(directory):
     process = Popen(['gconftool-2', '--recursive-unset', directory])
-    log.debug('Start setting reset: %s' % directory)
+    log.debug(f'Start setting reset: {directory}')
     return process.communicate()
 
 
@@ -95,12 +95,9 @@ class CateView(Gtk.TreeView):
 
     def _create_model(self):
         '''The model is icon, title and the list reference'''
-        model = Gtk.ListStore(
-                    GdkPixbuf.Pixbuf,
-                    GObject.TYPE_STRING,
-                    GObject.TYPE_STRING)
-
-        return model
+        return Gtk.ListStore(
+            GdkPixbuf.Pixbuf, GObject.TYPE_STRING, GObject.TYPE_STRING
+        )
 
     def _add_columns(self):
         column = Gtk.TreeViewColumn(_('Category'))
@@ -137,11 +134,9 @@ class SettingView(Gtk.TreeView):
 
     def _create_model(self):
         ''' The first is for icon, second is for real path, second is for title (if available)'''
-        model = Gtk.ListStore(GdkPixbuf.Pixbuf,
-                              GObject.TYPE_STRING,
-                              GObject.TYPE_STRING)
-
-        return model
+        return Gtk.ListStore(
+            GdkPixbuf.Pixbuf, GObject.TYPE_STRING, GObject.TYPE_STRING
+        )
 
     def _add_columns(self):
         column = Gtk.TreeViewColumn(_('Setting'))
@@ -255,10 +250,8 @@ class BackupProgressDialog(ProcessDialog):
 
         if stderr is None:
             backup_name = build_backup_path(directory, name)
-            sum_file = open(backup_name, 'w')
-            sum_file.write('\n'.join(totol_backuped))
-            sum_file.close()
-
+            with open(backup_name, 'w') as sum_file:
+                sum_file.write('\n'.join(totol_backuped))
         self.destroy()
 
 
@@ -325,11 +318,12 @@ class DesktopRecovery(TweakModule):
 
         name_prefix = build_backup_prefix(directory)
 
-        file_lsit = glob.glob(name_prefix + '*.xml')
+        file_lsit = glob.glob(f'{name_prefix}*.xml')
         file_lsit.sort(cmp=file_cmp, reverse=True)
 
-        log.debug('Use glob to find the name_prefix: %s with result: %s' % (name_prefix,
-                                                                            str(file_lsit)))
+        log.debug(
+            f'Use glob to find the name_prefix: {name_prefix} with result: {file_lsit}'
+        )
 
         if file_lsit:
             first_iter = None
@@ -337,7 +331,7 @@ class DesktopRecovery(TweakModule):
                 iter = model.append((os.path.basename(file_path)[:-4],
                                      file_path))
 
-                if first_iter == None:
+                if first_iter is None:
                     first_iter = iter
 
             self.backup_combobox.set_active_iter(first_iter)
@@ -376,7 +370,7 @@ class DesktopRecovery(TweakModule):
             return time.strftime('%Y-%m-%d-%H-%M', time.localtime(time.time()))
 
         directory = self.dir_label.get_text()
-        log.debug("Start backing up the dir: %s" % directory)
+        log.debug(f"Start backing up the dir: {directory}")
 
         # if 1, then root directory
         if directory.count('/') == 1:
@@ -416,12 +410,12 @@ class DesktopRecovery(TweakModule):
                     self.update_backup_model(directory)
                 else:
                     self.show_backup_failed_dialog()
-                    log.debug("Backup error: %s" % stderr)
+                    log.debug(f"Backup error: {stderr}")
 
     def on_delete_button_clicked(self, widget):
         def try_remove_record_in_root_backup(directory, path):
             rootpath = build_backup_prefix('/'.join(directory.split('/')[:2])) + \
-                                           os.path.basename(path)
+                                               os.path.basename(path)
             if os.path.exists(rootpath):
                 lines = open(rootpath).read().split()
                 lines.remove(path)
@@ -429,9 +423,8 @@ class DesktopRecovery(TweakModule):
                 if len(lines) == 0:
                     os.remove(rootpath)
                 else:
-                    new = open(rootpath, 'w')
-                    new.write('\n'.join(lines))
-                    new.close()
+                    with open(rootpath, 'w') as new:
+                        new.write('\n'.join(lines))
 
         def try_remove_all_subback(path):
             for line in open(path):
@@ -450,7 +443,7 @@ class DesktopRecovery(TweakModule):
         else:
             dialog = QuestionDialog(message=_('Would you like to delete the backup of'
                                       ' all "<b>%(setting_name)s</b>" settings named "<b>%(backup_name)s</b>"?') % \
-                                      {'setting_name': directory,
+                                          {'setting_name': directory,
                                        'backup_name': os.path.basename(path)[:-4]})
         response = dialog.run()
         dialog.destroy()
@@ -544,16 +537,15 @@ class DesktopRecovery(TweakModule):
     def on_edit_button_clicked(self, widget):
         def try_rename_record_in_root_backup(directory, old_path, new_path):
             rootpath = build_backup_prefix('/'.join(directory.split('/')[:2])) + \
-                                           os.path.basename(path)
+                                               os.path.basename(path)
 
             if os.path.exists(rootpath):
                 lines = open(rootpath).read().split()
                 lines.remove(old_path)
                 lines.append(new_path)
 
-                new = open(rootpath, 'w')
-                new.write('\n'.join(lines))
-                new.close()
+                with open(rootpath, 'w') as new:
+                    new.write('\n'.join(lines))
 
         iter = self.backup_combobox.get_active_iter()
         model = self.backup_combobox.get_model()
@@ -566,7 +558,7 @@ class DesktopRecovery(TweakModule):
         res = dialog.run()
         dialog.destroy()
         new_name = dialog.get_text()
-        log.debug('Get the new backup name: %s' % new_name)
+        log.debug(f'Get the new backup name: {new_name}')
 
         if res == Gtk.ResponseType.YES and new_name:
             # If is root, try to rename all the subdir, then rename itself
@@ -575,17 +567,15 @@ class DesktopRecovery(TweakModule):
                 for line in open(path):
                     line = line.strip()
                     dirname = os.path.dirname(line)
-                    new_path = os.path.join(dirname, new_name + '.xml')
-                    log.debug('Rename backup file from "%s" to "%s"' % (line, new_path))
+                    new_path = os.path.join(dirname, f'{new_name}.xml')
+                    log.debug(f'Rename backup file from "{line}" to "{new_path}"')
                     os.rename(line, new_path)
                     totol_renamed.append(new_path)
-                sum_file = open(path, 'w')
-                sum_file.write('\n'.join(totol_renamed))
-                sum_file.close()
-
+                with open(path, 'w') as sum_file:
+                    sum_file.write('\n'.join(totol_renamed))
             dirname = os.path.dirname(path)
-            new_path = os.path.join(dirname, new_name + '.xml')
-            log.debug('Rename backup file from "%s" to "%s"' % (path, new_path))
+            new_path = os.path.join(dirname, f'{new_name}.xml')
+            log.debug(f'Rename backup file from "{path}" to "{new_path}"')
             os.rename(path, new_path)
             try_rename_record_in_root_backup(directory, path, new_path)
 

@@ -33,7 +33,7 @@ import itertools
 import locale
 import gettext
 locale.setlocale(locale.LC_ALL, "")
-gettext.bindtextdomain("ccsm", DataDir + "/locale")
+gettext.bindtextdomain("ccsm", f"{DataDir}/locale")
 gettext.textdomain("ccsm")
 _ = gettext.gettext
 
@@ -47,23 +47,20 @@ def gtk_process_events ():
         Gtk.main_iteration ()
 
 def getScreens():
-    screens = []
     display = Gdk.Display.get_default()
     nScreens = display.get_n_screens()
-    for i in range(nScreens):
-        screens.append(i)
-    return screens
+    return list(range(nScreens))
 
 def getDefaultScreen():
     display = Gdk.Display.get_default()
     return display.get_default_screen().get_number()
 
-def protect_markup_dict (dict_):
-    return dict((k, protect_pango_markup (v)) for (k, v) in dict_.items())
+def protect_markup_dict(dict_):
+    return {k: protect_pango_markup (v) for (k, v) in dict_.items()}
 
 class Image (Gtk.Image):
 
-    def __init__ (self, name = None, type = ImageNone, size = 32,
+    def __init__(self, name = None, type = ImageNone, size = 32,
                   useMissingImage = False):
         GObject.GObject.__init__ (self)
 
@@ -78,26 +75,26 @@ class Image (Gtk.Image):
         try:
             if type in  (ImagePlugin, ImageCategory, ImageThemed):
                 pixbuf = None
-                
+
                 if type == ImagePlugin:
-                    name = "plugin-" + name
+                    name = f"plugin-{name}"
                     try:
                         pixbuf = IconTheme.load_icon (name, size, 0)
                     except GObject.GError:
                         pixbuf = IconTheme.load_icon ("plugin-unknown", size, 0)
-                
+
                 elif type == ImageCategory:
-                    name = "plugins-" + name
+                    name = f"plugins-{name}"
                     try:
                         pixbuf = IconTheme.load_icon (name, size, 0)
                     except GObject.GError:
                         pixbuf = IconTheme.load_icon ("plugins-unknown", size, 0)
-                
+
                 else:
                     pixbuf = IconTheme.load_icon (name, size, 0)
 
                 self.set_from_pixbuf (pixbuf)
-            
+
             elif type == ImageStock:
                 self.set_from_stock (name, size)
         except GObject.GError as e:
@@ -294,12 +291,12 @@ class Updater:
     def AppendPlugin (self, plugin):
         self.Plugins.append (plugin)
 
-    def Remove (self, widget):
+    def Remove(self, widget):
         setting = widget.Setting
         l = self.VisibleSettings.get((setting.Plugin.Name, setting.Name))
         if not l:
             return
-        for i, ref in enumerate(list(l)):
+        for ref in list(l):
             if ref() is widget:
                 l.remove(ref)
                 break
@@ -317,7 +314,7 @@ class Updater:
             if widget is not None:
                 widget.Read()
 
-    def Update (self):
+    def Update(self):
         if self.Block > 0:
             return True
 
@@ -327,8 +324,9 @@ class Updater:
                 self.UpdatePlugins()
 
             for setting in list(changed):
-                widgets = self.VisibleSettings.get((setting.Plugin.Name, setting.Name))
-                if widgets: 
+                if widgets := self.VisibleSettings.get(
+                    (setting.Plugin.Name, setting.Name)
+                ):
                     for reference in widgets:
                         widget = reference()
                         if widget is not None:
@@ -365,10 +363,7 @@ def SettingKeyFunc(value):
     return value.Plugin.Ranking[value.Name]
 
 def CategoryKeyFunc(category):
-    if 'General' == category:
-        return ''
-    else:
-        return category or 'zzzzzzzz'
+    return '' if category == 'General' else category or 'zzzzzzzz'
 
 def GroupIndexKeyFunc(item):
     return item[1][0]
@@ -402,14 +397,8 @@ try:
     all
 except NameError:
     def any(iterable):
-        for element in iterable:
-            if element:
-                return True
-        return False
+        return any(iterable)
 
     def all(iterable):
-        for element in iterable:
-            if not element:
-                return False
-        return True
+        return all(iterable)
 

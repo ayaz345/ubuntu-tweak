@@ -1,15 +1,10 @@
 from ubuntutweak import system
 
 def is_ubuntu(distro):
-    if type(distro) == list:
-        for dis in distro:
-            if system.is_supported(dis):
-                return True
-            return False
-    else:
-        if system.is_supported(distro):
-            return True
-        return False
+    if type(distro) != list:
+        return bool(system.is_supported(distro))
+    for dis in distro:
+        return bool(system.is_supported(dis))
 
 def filter_sources():
     newsource = []

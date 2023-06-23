@@ -57,8 +57,9 @@ class Misc(TweakModule):
 
         notes_label = Gtk.Label()
         notes_label.set_property('halign', Gtk.Align.START)
-        notes_label.set_markup('<span size="smaller">%s</span>' % \
-                _('Note: you may need to log out to take effect'))
+        notes_label.set_markup(
+            f"""<span size="smaller">{_('Note: you may need to log out to take effect')}</span>"""
+        )
         notes_label._ut_left = 1
 
         if system.CODENAME == 'precise':
@@ -153,11 +154,10 @@ class Misc(TweakModule):
         id_pattern = re.compile('id=(\d+)')
         for line in os.popen('xinput list').read().split('\n'):
             if 'id=' in line and \
-               'pointer' in line and \
-               'slave' in line and \
-               'XTEST' not in line:
-                match = id_pattern.findall(line)
-                if match:
+                   'pointer' in line and \
+                   'slave' in line and \
+                   'XTEST' not in line:
+                if match := id_pattern.findall(line):
                     pointer_ids.append(match[0])
 
         return pointer_ids
@@ -167,7 +167,7 @@ class Misc(TweakModule):
             ids = self.get_pointer_id()
             value = len(ids)
             for id in ids:
-                map = os.popen('xinput get-button-map %s' % id).read().strip()
+                map = os.popen(f'xinput get-button-map {id}').read().strip()
                 if '4 5' in map:
                     value -= 1
                 elif '5 4' in map:
@@ -183,7 +183,7 @@ class Misc(TweakModule):
         self.natural_scrolling_switch.set_active(self.get_natural_scrolling_enabled())
 
     def on_natural_scrolling_changed(self, widget, *args):
-        log.debug('>>>>> on_natural_scrolling_changed: %s' % widget.get_active())
+        log.debug(f'>>>>> on_natural_scrolling_changed: {widget.get_active()}')
 
         map = '1 2 3 4 5 6 7 8 9 10 11 12'
 
@@ -198,29 +198,25 @@ class Misc(TweakModule):
     def get_natural_scrolling_from_file(self):
         string = 'pointer = 1 2 3 5 4'
         xmodmap = os.path.expanduser('~/.Xmodmap')
-        if os.path.exists(xmodmap):
-            return string in open(xmodmap).read()
-        else:
-            return False
+        return string in open(xmodmap).read() if os.path.exists(xmodmap) else False
 
     def save_natural_scrolling_to_file(self, map):
         xmodmap = os.path.expanduser('~/.Xmodmap')
         map = map + '\n'
-        string = 'pointer = %s' % map
+        string = f'pointer = {map}'
 
         if os.path.exists(xmodmap):
             pattern = re.compile('pointer = ([\d\s]+)')
             data = open(xmodmap).read()
-            match = pattern.search(data)
-            if match:
-                log.debug("Match in Xmodmap: %s" % match.groups()[0])
+            if match := pattern.search(data):
+                log.debug(f"Match in Xmodmap: {match.groups()[0]}")
                 data = data.replace(match.groups()[0], map)
             else:
                 data = data + '\n' + string
         else:
             data = string
 
-        log.debug('Will write the content to Xmodmap: %s' % data)
+        log.debug(f'Will write the content to Xmodmap: {data}')
         with open(xmodmap, 'w') as f:
             f.write(data)
             f.close()

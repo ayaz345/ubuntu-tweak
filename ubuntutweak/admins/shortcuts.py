@@ -156,10 +156,10 @@ class Shortcuts(TweakModule):
             return True
 
         for mod in KeyModifier:
-            if "%s_L" % mod in new:
-                new = new.replace ("%s_L" % mod, "<%s>" % mod)
-            if "%s_R" % mod in new:
-                new = new.replace ("%s_R" % mod, "<%s>" % mod)
+            if f"{mod}_L" in new:
+                new = new.replace(f"{mod}_L", f"<{mod}>")
+            if f"{mod}_R" in new:
+                new = new.replace(f"{mod}_R", f"<{mod}>")
 
         widget.destroy()
 

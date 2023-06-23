@@ -80,7 +80,7 @@ class ModuleLoader:
 
     def get_module(self, id):
         if not self.id_table.has_key(id):
-            raise ModuleKeyError('No module with id "%s"' % id)
+            raise ModuleKeyError(f'No module with id "{id}"')
         else:
             return self.id_table[id]
 
@@ -88,10 +88,7 @@ class ModuleLoader:
         return self.id_table.values()
 
     def is_supported_desktop(self, desktop_name):
-        if desktop_name:
-            return system.DESKTOP in desktop_name
-        else:
-            return True
+        return system.DESKTOP in desktop_name if desktop_name else True
 
 class TweakModule(gtk.VBox):
     __title__ = ''
@@ -172,13 +169,13 @@ class TweakModule(gtk.VBox):
         align.add(inner_hbox)
 
         name = gtk.Label()
-        name.set_markup('<b><big>%s</big></b>' % self.__title__)
+        name.set_markup(f'<b><big>{self.__title__}</big></b>')
         name.set_alignment(0, 0.5)
         inner_hbox.pack_start(name, False, False, 0)
 
         if self.__url__:
             more = gtk.Label()
-            more.set_markup('<a href="%s">%s</a>' % (self.__url__, self.__urltitle__))
+            more.set_markup(f'<a href="{self.__url__}">{self.__urltitle__}</a>')
             inner_hbox.pack_end(more, False, False, 0)
 
         desc = gtk.Label(self.__desc__)
@@ -187,17 +184,16 @@ class TweakModule(gtk.VBox):
         inner_vbox.pack_start(desc, False, False, 0)
 
         if self.__icon__:
-            if type(self.__icon__) != list:
-                if self.__icon__.endswith('.png'):
-                    icon_path = os.path.join(DATA_DIR, 'pixmaps', self.__icon__)
-                    image = gtk.image_new_from_file(icon_path)
-                else:
-                    pixbuf = icon.get_from_name(self.__icon__, size=48)
-                    image = gtk.image_new_from_pixbuf(pixbuf)
-            else:
+            if type(self.__icon__) == list:
                 pixbuf = icon.get_from_list(self.__icon__, size=48)
                 image = gtk.image_new_from_pixbuf(pixbuf)
 
+            elif self.__icon__.endswith('.png'):
+                icon_path = os.path.join(DATA_DIR, 'pixmaps', self.__icon__)
+                image = gtk.image_new_from_file(icon_path)
+            else:
+                pixbuf = icon.get_from_name(self.__icon__, size=48)
+                image = gtk.image_new_from_pixbuf(pixbuf)
             image.set_alignment(0, 0)
             image.set_padding(5, 5)
             hbox.pack_end(image, False, False, 0)
@@ -234,16 +230,14 @@ class TweakModule(gtk.VBox):
     def get_pixbuf(cls):
         '''Return gtk Pixbuf'''
         if cls.__icon__:
-            if type(cls.__icon__) != list:
-                if cls.__icon__.endswith('.png'):
-                    icon_path = os.path.join(DATA_DIR, 'pixmaps', cls.__icon__)
-                    pixbuf = gtk.gd.pixbuf_new_from_file(icon_path)
-                else:
-                    pixbuf = icon.get_from_name(cls.__icon__)
-            else:
-                pixbuf = icon.get_from_list(cls.__icon__)
+            if type(cls.__icon__) == list:
+                return icon.get_from_list(cls.__icon__)
 
-            return pixbuf
+            elif cls.__icon__.endswith('.png'):
+                icon_path = os.path.join(DATA_DIR, 'pixmaps', cls.__icon__)
+                return gtk.gd.pixbuf_new_from_file(icon_path)
+            else:
+                return icon.get_from_name(cls.__icon__)
 
 def show_error_page():
     align = gtk.Alignment(0.5, 0.3)
@@ -263,11 +257,15 @@ def show_error_page():
     return align
 
 def create_broken_module_class(name):
-    return classobj('Broken%s' % name.title(),
-                    (BrokenModule,),
-                    {'__name__': name,
-                     '__title__': name,
-                     'error_view': run_traceback('error', textview_only=True)})
+    return classobj(
+        f'Broken{name.title()}',
+        (BrokenModule,),
+        {
+            '__name__': name,
+            '__title__': name,
+            'error_view': run_traceback('error', textview_only=True),
+        },
+    )
 
 class BrokenModule(TweakModule):
     __icon__ = 'gtk-dialog-error'

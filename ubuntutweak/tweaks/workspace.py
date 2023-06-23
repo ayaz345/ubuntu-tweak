@@ -76,16 +76,15 @@ class EdgeComboBox(Gtk.ComboBox):
             if CompizPlugin.is_available(name, key):
                 model.append((name, key, text))
 
-                setting = CompizSetting("%s.%s" % (name, key))
-                log.debug("CompizSetting: %s, value: %s, key: %s" % \
-                        (name, setting.get_value(), edge))
+                setting = CompizSetting(f"{name}.{key}")
+                log.debug(f"CompizSetting: {name}, value: {setting.get_value()}, key: {edge}")
 
                 if setting.get_value() == edge:
                     enable = True
                     self.old_plugin = name
                     self.old_key = key
                     self.set_active(count)
-                    log.info("The %s is holding %s" % (edge, name))
+                    log.info(f"The {edge} is holding {name}")
 
                 count = count + 1
 
@@ -99,25 +98,25 @@ class EdgeComboBox(Gtk.ComboBox):
     def on_changed(self, widget):
         plugin = self.get_current_plugin()
         key = self.get_current_key()
-        log.debug("ComboBox changed: from %s to %s" % (self.old_plugin, plugin))
+        log.debug(f"ComboBox changed: from {self.old_plugin} to {plugin}")
 
         if self.old_plugin:
             for name, key, text in self.edge_settings:
                 if name == self.old_plugin:
-                    log.debug('%s has to unset (%s)' % (name, key))
-                    setting = CompizSetting("%s.%s" % (name, key))
+                    log.debug(f'{name} has to unset ({key})')
+                    setting = CompizSetting(f"{name}.{key}")
                     setting.set_value('')
                     break
 
         self.old_plugin = plugin
         self.old_key = key
 
-        log.debug('%s changed to "%s"' % (widget.edge, plugin))
+        log.debug(f'{widget.edge} changed to "{plugin}"')
         self.emit('edge_changed', plugin)
 
     def set_to_none(self):
         self.handler_block_by_func(self.on_changed)
-        log.debug("on_edge_changed: from %s to none" % self.get_current_plugin())
+        log.debug(f"on_edge_changed: from {self.get_current_plugin()} to none")
         self.set_active(self.max_index)
         self.handler_unblock_by_func(self.on_changed)
 
@@ -196,9 +195,9 @@ class Workspace(TweakModule):
         self.BottomLeft = EdgeComboBox("BottomLeft")
         left_vbox.pack_end(self.BottomLeft, False, False, 0)
 
-        wallpaper = get_local_path(GSetting('org.gnome.desktop.background.picture-uri').get_value())
-
-        if wallpaper:
+        if wallpaper := get_local_path(
+            GSetting('org.gnome.desktop.background.picture-uri').get_value()
+        ):
             try:
                 pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_size(wallpaper, 160, 100)
             except GObject.GError:
@@ -241,6 +240,7 @@ class Workspace(TweakModule):
                     edge_combobox.set_to_none()
                     break
 
-            setting = CompizSetting("%s.%s" % (widget.get_current_plugin(),
-                widget.get_current_key()))
+            setting = CompizSetting(
+                f"{widget.get_current_plugin()}.{widget.get_current_key()}"
+            )
             setting.set_value(widget.edge)

@@ -34,10 +34,12 @@ from ubuntutweak.gui.dialogs import QuestionDialog
 log = logging.getLogger('Script')
 
 
+
+
 class AbstractScripts(object):
     system_dir = os.path.join(CONFIG_ROOT, 'scripts')
 
-    if int(platform.dist()[1][0:2]) >= 13:
+    if int(platform.dist()[1][:2]) >= 13:
         user_dir = os.path.expanduser('~/.local/share/nautilus/scripts')
     else:
         user_dir = os.path.join(os.getenv('HOME'), '.gnome2', 'nautilus-scripts')
@@ -77,9 +79,12 @@ class DefaultScripts(AbstractScripts):
         if not os.path.exists(self.system_dir):
             os.makedirs(self.system_dir)
         for file, des in self.scripts.items():
-            realname = '%s' % des
+            realname = f'{des}'
             if not os.path.exists(os.path.join(self.system_dir,realname)):
-                shutil.copy(os.path.join(DATA_DIR, 'scripts/%s' % file), os.path.join(self.system_dir,realname))
+                shutil.copy(
+                    os.path.join(DATA_DIR, f'scripts/{file}'),
+                    os.path.join(self.system_dir, realname),
+                )
 
     def remove(self):
         if not os.path.exists(self.system_dir):
@@ -119,12 +124,11 @@ class EnableScripts(DirView, AbstractScripts):
 
             if os.path.isdir(fullname):
                 self.do_update_model(fullname, child_iter)
-            else:
-                if not os.access(fullname, os.X_OK):
-                    try:
-                        os.chmod(fullname, stat.S_IRWXU)
-                    except:
-                        pass
+            elif not os.access(fullname, os.X_OK):
+                try:
+                    os.chmod(fullname, stat.S_IRWXU)
+                except:
+                    pass
 
 
 class DisableScripts(FlatView, AbstractScripts):

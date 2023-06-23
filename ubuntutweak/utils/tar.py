@@ -31,10 +31,7 @@ class TarFile:
 
     def get_root_name(self):
         names = self._tarfile.getnames()
-        for name in names:
-            if '/' not in name:
-                return name
-        return ''
+        return next((name for name in names if '/' not in name), '')
 
 
 class ThemeFile(TarFile):
@@ -66,14 +63,16 @@ class ThemeFile(TarFile):
                 break
 
         if self._index_file:
-            log.debug("the index file is; %s" % self._index_file)
+            log.debug(f"the index file is; {self._index_file}")
             self._tarfile.extract(self._index_file, '/tmp')
-            cs = ConfigSetting('/tmp/%s::Icon Theme#name' % self._index_file)
+            cs = ConfigSetting(f'/tmp/{self._index_file}::Icon Theme#name')
             self.theme_name = cs.get_value()
 
-            if '/' in self._index_file and not './' in self._index_file:
+            if '/' in self._index_file and './' not in self._index_file:
                 self._to_extract_dir = os.path.dirname(self._index_file)
-                log.debug("Because of index file: %s, the extra dir will be: %s" % (self._index_file, self._to_extract_dir))
+                log.debug(
+                    f"Because of index file: {self._index_file}, the extra dir will be: {self._to_extract_dir}"
+                )
                 self.install_name = os.path.basename(os.path.dirname(self._index_file))
             else:
                 #TODO improve
@@ -91,7 +90,7 @@ class ThemeFile(TarFile):
         if self._to_extract_dir:
             self._tarfile.extractall(os.path.expanduser('~/.icons'))
         else:
-            new_dir = os.path.expanduser('~/.icons/%s' % self.install_name)
+            new_dir = os.path.expanduser(f'~/.icons/{self.install_name}')
             os.makedirs(new_dir)
             self._tarfile.extractall(new_dir)
 

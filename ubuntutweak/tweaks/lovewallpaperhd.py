@@ -122,16 +122,14 @@ class JsonMan:
         self.screen_width = str(screen_width)
 
     def get_json(self):
-        json_init_url = "http://partner.lovebizhi.com/ubuntutweak.php?width=" + self.screen_width + "&height=" + self.screen_height
+        json_init_url = f"http://partner.lovebizhi.com/ubuntutweak.php?width={self.screen_width}&height={self.screen_height}"
         fd = urllib2.urlopen(json_init_url, timeout=10).read().decode("utf-8")
         self.index = json.loads(fd)
 
     def create_tryluck(self):
         self.tryluck_list = []
-        num = 0
-        for tryluck_image in self.index:
-            num += 1
-            self.tryluck_list.append(Picture(tryluck_image["s"],
-                                             tryluck_image['b'],
-                                             str(num)))
+        self.tryluck_list.extend(
+            Picture(tryluck_image["s"], tryluck_image['b'], str(num))
+            for num, tryluck_image in enumerate(self.index, start=1)
+        )
         return self.tryluck_list

@@ -36,8 +36,7 @@ class UpdateInfo(Clip):
         # calculate when the last apt-get update (or similar operation)
         # was performed
         mtime = os.stat("/var/lib/apt/periodic/update-success-stamp")[stat.ST_MTIME]
-        ago_hours = int((time.time() - mtime) / (60*60) )
-        return ago_hours
+        return int((time.time() - mtime) / (60*60) )
 
     def _get_last_apt_get_update_text(self):
         """

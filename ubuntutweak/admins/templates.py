@@ -50,10 +50,9 @@ def update_dir():
 
 
 def is_right_path():
-    if (os.path.expanduser('~').strip('/') == USER_DIR.strip('/')) or os.path.isfile(USER_DIR):
-        return False
-    else:
-        return True
+    return os.path.expanduser('~').strip('/') != USER_DIR.strip(
+        '/'
+    ) and not os.path.isfile(USER_DIR)
 
 
 SYSTEM_DIR, USER_DIR = update_dir()
@@ -77,9 +76,12 @@ class DefaultTemplates:
         if not os.path.exists(SYSTEM_DIR):
             os.makedirs(SYSTEM_DIR)
         for path, des in self.templates.items():
-            realname = "%s.%s" % (des, path.split('.')[1])
+            realname = f"{des}.{path.split('.')[1]}"
             if not os.path.exists(os.path.join(SYSTEM_DIR, realname)):
-                shutil.copy(os.path.join(DATA_DIR, 'templates/%s' % path), os.path.join(SYSTEM_DIR, realname))
+                shutil.copy(
+                    os.path.join(DATA_DIR, f'templates/{path}'),
+                    os.path.join(SYSTEM_DIR, realname),
+                )
 
     def remove(self):
         if not os.path.exists(SYSTEM_DIR):

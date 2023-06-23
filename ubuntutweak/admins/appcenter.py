@@ -48,8 +48,9 @@ UPDATE_SETTING = GSetting(key='com.ubuntu-tweak.tweak.appcenter-has-update', typ
 VERSION_SETTING = GSetting(key='com.ubuntu-tweak.tweak.appcenter-version', type=str)
 
 def get_app_data_url():
-    return utdata.get_download_url('/media/utdata/appcenter-%s.tar.gz' %
-                                   VERSION_SETTING.get_value())
+    return utdata.get_download_url(
+        f'/media/utdata/appcenter-{VERSION_SETTING.get_value()}.tar.gz'
+    )
 
 if not os.path.exists(APPCENTER_ROOT):
     os.mkdir(APPCENTER_ROOT)
@@ -71,10 +72,7 @@ class PackageInfo:
 
     def get_name(self):
         appname = self.desktopentry.getName()
-        if appname == '':
-            return self.name.title()
-
-        return appname
+        return self.name.title() if appname == '' else appname
 
     def get_version(self):
         try:
@@ -105,9 +103,8 @@ class StatusProvider(object):
         return self._data
 
     def save(self):
-        file = open(self._path, 'w')
-        file.write(json.dumps(self._data))
-        file.close()
+        with open(self._path, 'w') as file:
+            file.write(json.dumps(self._data))
 
     def load_objects_from_parser(self, parser):
         init = self.get_init()
@@ -115,35 +112,26 @@ class StatusProvider(object):
         for key in parser.keys():
             #FIXME because of source id
             if init:
-                self._data['apps'][key] = {}
-                self._data['apps'][key]['read'] = True
-                self._data['apps'][key]['cate'] = parser.get_category(key)
-            else:
-                if key not in self._data['apps']:
-                    self._data['apps'][key] = {}
-                    self._data['apps'][key]['read'] = False
-                    self._data['apps'][key]['cate'] = parser.get_category(key)
-
+                self._data['apps'][key] = {'read': True, 'cate': parser.get_category(key)}
+            elif key not in self._data['apps']:
+                self._data['apps'][key] = {'read': False, 'cate': parser.get_category(key)}
         if init and parser.keys():
             self.set_init(False)
 
         self.save()
 
     def count_unread(self, cate):
-        i = 0
-        for key in self._data['apps']:
-            if self._data['apps'][key]['cate'] == cate and not self._data['apps'][key]['read']:
-                i += 1
-        return i
+        return sum(
+            1
+            for key in self._data['apps']
+            if self._data['apps'][key]['cate'] == cate
+            and not self._data['apps'][key]['read']
+        )
 
     def load_category_from_parser(self, parser):
         for cate in parser.keys():
             id = parser.get_id(cate)
-            if self._is_init:
-                self._data['cates'][id] = 0
-            else:
-                self._data['cates'][id] = self.count_unread(id)
-
+            self._data['cates'][id] = 0 if self._is_init else self.count_unread(id)
         self._is_init = False
         self.save()
 
@@ -225,17 +213,16 @@ class AppView(Gtk.TreeView):
         self.show_all()
 
     def _create_model(self):
-        model = Gtk.ListStore(
-                        GObject.TYPE_BOOLEAN,
-                        GdkPixbuf.Pixbuf,
-                        GObject.TYPE_STRING,
-                        GObject.TYPE_STRING,
-                        GObject.TYPE_STRING,
-                        GObject.TYPE_STRING,
-                        GObject.TYPE_STRING,
-                        GObject.TYPE_STRING)
-
-        return model
+        return Gtk.ListStore(
+            GObject.TYPE_BOOLEAN,
+            GdkPixbuf.Pixbuf,
+            GObject.TYPE_STRING,
+            GObject.TYPE_STRING,
+            GObject.TYPE_STRING,
+            GObject.TYPE_STRING,
+            GObject.TYPE_STRING,
+            GObject.TYPE_STRING,
+        )
 
     def sort_model(self):
         model = self.get_model()
@@ -276,7 +263,7 @@ class AppView(Gtk.TreeView):
 
     def icon_column_view_func(self, tree_column, renderer, model, iter, data=None):
         pixbuf = model.get_value(iter, self.COLUMN_ICON)
-        if pixbuf == None:
+        if pixbuf is None:
             renderer.set_property("visible", False)
         else:
             renderer.set_property("visible", True)
@@ -292,11 +279,7 @@ class AppView(Gtk.TreeView):
             if icon_theme:
                 break
 
-        if icon_theme:
-            pixbuf = icon_theme.load_icon()
-        else:
-            pixbuf = icon.get_from_name(size=32)
-
+        pixbuf = icon_theme.load_icon() if icon_theme else icon.get_from_name(size=32)
         iter = model.append()
         model.set(iter,
                   self.COLUMN_INSTALLED, status,
@@ -376,6 +359,7 @@ class AppView(Gtk.TreeView):
         def do_app_changed(model, iter, appname, desc):
             model.set(iter,
                       self.COLUMN_DISPLAY, self.__fill_changed_display(appname, desc))
+
         def do_app_unchanged(model, iter, appname, desc):
             model.set(iter,
                       self.COLUMN_DISPLAY,
@@ -412,7 +396,7 @@ class AppView(Gtk.TreeView):
             else:
                 to_installed = is_installed
                 to_installed = not to_installed
-                if to_installed == True:
+                if to_installed:
                     self.to_add.append(pkgname)
                 else:
                     self.to_add.remove(pkgname)
@@ -476,12 +460,10 @@ class CheckUpdateDialog(ProcessDialog):
     def on_timeout(self):
         self.pulse()
 
-        if self.error:
+        if self.error or self.done:
             self.destroy()
-        elif not self.done:
-            return True
         else:
-            self.destroy()
+            return True
 
 class FetchingDialog(DownloadDialog):
     def __init__(self, url, parent=None):
@@ -612,7 +594,7 @@ class AppCenter(TweakModule):
         to_rm = self.appview.to_rm
         to_add = self.appview.to_add
 
-        log.debug("on_apply_button_clicked: to_rm: %s, to_add: %s" % (to_rm, to_add))
+        log.debug(f"on_apply_button_clicked: to_rm: {to_rm}, to_add: {to_add}")
 
         if to_add or to_rm:
             set_busy(self)

@@ -283,7 +283,7 @@ class Daemon(PolicyKitService):
         partsdir = apt_pkg.config.find_dir("Dir::Etc::Sourceparts")
         if not os.path.exists(partsdir):
             os.mkdir(partsdir)
-        file = os.path.join(partsdir, file+'.list')
+        file = os.path.join(partsdir, f'{file}.list')
 
         if enabled:
             self.list.add('deb', url, distro, comps.split(' '), comment, -1, file)
@@ -359,9 +359,7 @@ class Daemon(PolicyKitService):
             if self.stable_url in source.str() and source.type == 'deb' and not source.disabled:
                 return
 
-        distro = system.CODENAME
-
-        if distro:
+        if distro := system.CODENAME:
             self.set_separated_entry(self.stable_url, distro, 'main',
                                      'Ubuntu Tweak Stable Source', True,
                                      'ubuntu-tweak-stable')
@@ -372,19 +370,17 @@ class Daemon(PolicyKitService):
     def get_stable_source_enabled(self):
         self.list.refresh()
 
-        for source in self.list:
-            if self.stable_url in source.str() and source.type == 'deb' and not source.disabled:
-                return True
-
-        return False
+        return any(
+            self.stable_url in source.str()
+            and source.type == 'deb'
+            and not source.disabled
+            for source in self.list
+        )
 
     @dbus.service.method(INTERFACE,
                          in_signature='', out_signature='s')
     def get_list_state(self):
-        if self.liststate:
-            return self.liststate
-        else:
-            return "normal"
+        return self.liststate if self.liststate else "normal"
 
     @dbus.service.method(INTERFACE,
                          in_signature='', out_signature='s',
@@ -474,14 +470,10 @@ class Daemon(PolicyKitService):
                          sender_keyword='sender')
     def delete_source(self, path, sender=None):
         self._check_permission(sender, PK_ACTION_SOURCE)
-        if path.startswith(self.SOURCES_LIST):
-            os.system('rm "%s"' % path)
-            if os.path.exists(path):
-                return 'error'
-            else:
-                return 'done'
-        else:
+        if not path.startswith(self.SOURCES_LIST):
             return 'error'
+        os.system(f'rm "{path}"')
+        return 'error' if os.path.exists(path) else 'done'
 
     @dbus.service.method(INTERFACE,
                          in_signature='ss', out_signature='b',
@@ -489,7 +481,7 @@ class Daemon(PolicyKitService):
     def backup_source(self, path, backup_name, sender=None):
         self._check_permission(sender, PK_ACTION_SOURCE)
         if path.startswith(self.SOURCES_LIST):
-            new_path = path + '.' + backup_name + '.save'
+            new_path = f'{path}.{backup_name}.save'
             shutil.copy(path, new_path)
             return os.path.exists(new_path)
         else:
@@ -524,8 +516,7 @@ class Daemon(PolicyKitService):
                          sender_keyword='sender')
     def clean_configs(self, pkg, sender=None):
         self._check_permission(sender, PK_ACTION_CLEAN)
-        cmd = ['sudo', 'dpkg', '--purge']
-        cmd.append(pkg)
+        cmd = ['sudo', 'dpkg', '--purge', pkg]
         self.p = subprocess.Popen(cmd, stdout=PIPE)
         self._setup_non_block_io(self.p.stdout)
 
@@ -536,26 +527,25 @@ class Daemon(PolicyKitService):
         self._check_permission(sender, PK_ACTION_CLEAN)
         cmd = ['sudo', 'apt-get', '-y', '--force-yes', 'install']
         cmd.extend(pkgs)
-        log.debug("The install command is %s" % ' '.join(cmd))
+        log.debug(f"The install command is {' '.join(cmd)}")
         self.p = subprocess.Popen(cmd, stdout=PIPE)
         self._setup_non_block_io(self.p.stdout)
 
     @dbus.service.method(INTERFACE,
                          in_signature='', out_signature='v')
     def get_cmd_pipe(self):
-        if self.p:
-            terminaled = self.p.poll()
-            if terminaled == None:
-                try:
-                    return self.p.stdout.readline(), str(terminaled)
-                except:
-                    return '', 'None'
-            else:
-                strings, returncode = ''.join(self.p.stdout.readlines()), str(terminaled)
-                self.p = None
-                return strings, returncode
-        else:
+        if not self.p:
             return '', 'None'
+        terminaled = self.p.poll()
+        if terminaled is None:
+            try:
+                return self.p.stdout.readline(), str(terminaled)
+            except:
+                return '', 'None'
+        else:
+            strings, returncode = ''.join(self.p.stdout.readlines()), str(terminaled)
+            self.p = None
+            return strings, returncode
 
     @dbus.service.method(INTERFACE,
                          in_signature='s', out_signature='',
@@ -610,7 +600,7 @@ class Daemon(PolicyKitService):
         shutil.copy(src, dest)
 
     def _delete_old_logofile(self, dest):
-        for old in glob.glob(os.path.splitext(dest)[0] + ".*"):
+        for old in glob.glob(f"{os.path.splitext(dest)[0]}.*"):
             os.remove(old)
 
     @dbus.service.method(INTERFACE,
@@ -634,14 +624,14 @@ class Daemon(PolicyKitService):
         f = tempfile.NamedTemporaryFile()
         new_path = f.name
         f.close()
-        os.popen('cp %s %s' % (path, new_path))
+        os.popen(f'cp {path} {new_path}')
         os.chown(new_path, uid, uid)
         return new_path
 
     @dbus.service.method(INTERFACE,
                          in_signature='ss', out_signature='s')
     def get_user_gconf(self, user, key):
-        command = 'sudo -u %s gconftool-2 --get %s' % (user, key)
+        command = f'sudo -u {user} gconftool-2 --get {key}'
         cmd = os.popen(command)
         return cmd.read().strip()
 
@@ -650,10 +640,10 @@ class Daemon(PolicyKitService):
                          sender_keyword='sender')
     def set_user_gconf(self, user, key, value, type, list_type='', sender=None):
         self._check_permission(sender, PK_ACTION_TWEAK)
-        command = 'sudo -u %s gconftool-2 --type %s' % (user, type)
+        command = f'sudo -u {user} gconftool-2 --type {type}'
         # Use "" to make sure the value with space will be set correctly
         if list_type == '':
-            command = '%s --set %s "%s"' % (command, key, value)
+            command = f'{command} --set {key} "{value}"'
         else:
             command = '%s --type %s --list-type %s --set %s "%s"' % (command,
                                                                    list_type,
@@ -664,10 +654,10 @@ class Daemon(PolicyKitService):
     @dbus.service.method(INTERFACE,
                          in_signature='s', out_signature='s')
     def get_system_gconf(self, key):
-        command = 'gconftool-2 --direct --config-source xml:readwrite:/etc/gconf/gconf.xml.defaults --get %s' % key
+        command = f'gconftool-2 --direct --config-source xml:readwrite:/etc/gconf/gconf.xml.defaults --get {key}'
         cmd = os.popen(command)
         output = cmd.read().strip()
-        log.debug('get_system_gconf: %s is %s' % (key, output))
+        log.debug(f'get_system_gconf: {key} is {output}')
         return output
 
     @dbus.service.method(INTERFACE,
@@ -675,21 +665,20 @@ class Daemon(PolicyKitService):
                          sender_keyword='sender')
     def set_system_gconf(self, key, value, type, list_type='', sender=None):
         self._check_permission(sender, PK_ACTION_TWEAK)
-        log.debug('set_system_gconf: %s to %s' % (key, value))
+        log.debug(f'set_system_gconf: {key} to {value}')
         if list_type == '':
-            command = 'gconftool-2 --direct --config-source xml:readwrite:/etc/gconf/gconf.xml.defaults --type %s --set %s %s' % (type, key, value)
+            command = f'gconftool-2 --direct --config-source xml:readwrite:/etc/gconf/gconf.xml.defaults --type {type} --set {key} {value}'
         else:
-            command = 'gconftool-2 --direct --config-source xml:readwrite:/etc/gconf/gconf.xml.defaults --type %s --list-type %s --set %s %s' % (type, list_type, key, value)
+            command = f'gconftool-2 --direct --config-source xml:readwrite:/etc/gconf/gconf.xml.defaults --type {type} --list-type {list_type} --set {key} {value}'
         cmd = os.popen(command)
-        output = cmd.read().strip()
-        return output
+        return cmd.read().strip()
 
     @dbus.service.method(INTERFACE,
                          in_signature='ss', out_signature='b',
                          sender_keyword='sender')
     def set_config_setting(self, key, value, sender=None):
         self._check_permission(sender, PK_ACTION_TWEAK)
-        log.debug('set_config_setting: %s to %s' % (key, value))
+        log.debug(f'set_config_setting: {key} to {value}')
         cs = ConfigSetting(key)
         cs.set_value(value)
 

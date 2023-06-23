@@ -50,9 +50,11 @@ def walk_directories(dirs, filter_func):
     try:
         for thdir in dirs:
             if os.path.isdir(thdir):
-                for t in os.listdir(thdir):
-                    if filter_func(os.path.join(thdir, t)):
-                         valid.append(t)
+                valid.extend(
+                    t
+                    for t in os.listdir(thdir)
+                    if filter_func(os.path.join(thdir, t))
+                )
     except:
         log.critical("Error parsing directories", exc_info=True)
 

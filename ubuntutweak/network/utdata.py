@@ -25,7 +25,7 @@ else:
 
 def get_version_url(version_url):
     if DEV_MODE:
-        return urljoin(URL_PREFIX, '%sdev/' % version_url)
+        return urljoin(URL_PREFIX, f'{version_url}dev/')
     else:
         return urljoin(URL_PREFIX, version_url)
 
@@ -35,12 +35,7 @@ def get_download_url(download_url):
 def get_local_timestamp(folder):
     local_timestamp = os.path.join(folder, 'timestamp')
 
-    if os.path.exists(local_timestamp):
-        local_version = open(local_timestamp).read()
-    else:
-        local_version = '0'
-
-    return local_version
+    return open(local_timestamp).read() if os.path.exists(local_timestamp) else '0'
 
 def get_local_time(folder):
     timestamp = get_local_timestamp(folder)
@@ -51,9 +46,8 @@ def get_local_time(folder):
 
 def save_synced_timestamp(folder):
     synced = os.path.join(folder, 'synced')
-    f = open(synced, 'w')
-    f.write(str(int(time.time())))
-    f.close()
+    with open(synced, 'w') as f:
+        f.write(str(int(time.time())))
 
 def get_last_synced(folder):
     try:

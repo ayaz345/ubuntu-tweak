@@ -5,7 +5,9 @@ from ubuntutweak.admins.quicklists import NewDesktopEntry
 
 class TestQuicklists(unittest.TestCase):
     def setUp(self):
-        os.system('cp /usr/share/applications/google-chrome.desktop %s' %os.path.join(NewDesktopEntry.user_folder, 'google-chrome.desktop'))
+        os.system(
+            f"cp /usr/share/applications/google-chrome.desktop {os.path.join(NewDesktopEntry.user_folder, 'google-chrome.desktop')}"
+        )
         self.entry = NewDesktopEntry('/usr/share/applications/ubuntu-tweak.desktop')
         self.admin_gruop = 'Admins Shortcut Group'
         self.admin_name = 'Admins'

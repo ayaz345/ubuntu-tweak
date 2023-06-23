@@ -29,14 +29,14 @@ class CleanerInfo(Clip):
             else:
                 root_path = '~/.cache/thumbnails'
 
-            size = int(os.popen('du -bs %s' % root_path).read().split()[0])
+            size = int(os.popen(f'du -bs {root_path}').read().split()[0])
         except:
             size = 0
 
         if size:
 
             label = Gtk.Label(label=_('%s thumbnails cache can be cleaned.') % \
-                    GLib.format_size_for_display(size))
+                        GLib.format_size_for_display(size))
             label.set_alignment(0, 0.5)
 
             self.add_content(label)

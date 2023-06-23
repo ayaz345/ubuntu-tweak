@@ -53,11 +53,10 @@ class FileOperation:
     @classmethod
     def permission_test(cls, dest):
         dirname = os.path.dirname(dest)
-        if not os.access(dirname, os.R_OK | os.W_OK | os.X_OK):
-            ErrorDialog(_("You don't have permission to write in %s") % dirname).launch()
-            return False
-        else:
+        if os.access(dirname, os.R_OK | os.W_OK | os.X_OK):
             return True
+        ErrorDialog(_("You don't have permission to write in %s") % dirname).launch()
+        return False
 
     @classmethod
     def do_copy(cls, source, dest):
@@ -95,11 +94,11 @@ class FileOperation:
             if os.path.isdir(source):
                 ErrorDialog(title=_('Operation not permitted'),
                             message=_('Hard link doesn\'t support directory!')).launch()
+            elif os.path.exists(dest):
+                ErrorDialog(_('The target "%s" already exists!') % dest.decode('utf-8')).launch()
+
             else:
-                if not os.path.exists(dest):
-                    os.link(source, dest)
-                else:
-                    ErrorDialog(_('The target "%s" already exists!') % dest.decode('utf-8')).launch()
+                os.link(source, dest)
 
     @classmethod
     def copy(cls, source, dest):
@@ -152,8 +151,7 @@ class FileOperation:
     @classmethod
     def open(cls, source):
         """Open the file with gedit"""
-        exe = get_command_for_type('text/plain')
-        if exe:
+        if exe := get_command_for_type('text/plain'):
             if source[-1] == "root":
                 cmd = ["gksu", "-m", _("Enter your password to perform the administrative tasks") , exe]
                 cmd.extend(source[:-1])
@@ -170,11 +168,11 @@ class FileOperation:
         if source[-1] == "root":
             cmd = ["gksu", "-m", _("Enter your password to perform the administrative tasks") , "nautilus"]
             cmd.extend(source[:-1])
-            subprocess.call(cmd)
         else:
             cmd = ["nautilus"]
             cmd.extend(source)
-            subprocess.call(cmd)
+
+        subprocess.call(cmd)
 
     @classmethod
     def get_local_path(cls, uri):

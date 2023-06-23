@@ -141,20 +141,29 @@ class AutoStartItem(gtk.TreeView):
         if not os.path.exists(self.userdir): os.mkdir(self.userdir)
 
         #get the item with full-path from the dirs
-        self.useritems = map(lambda path: "%s/%s" % (self.userdir, path), 
-                                                    os.listdir(self.userdir))
+        self.useritems = map(
+            lambda path: f"{self.userdir}/{path}", os.listdir(self.userdir)
+        )
 
         etc_items = []
         gnome_items = []
         if os.path.exists(self.etc_dir):
-            etc_items = map(lambda path: "%s/%s" % (self.etc_dir, path),
-                        filter(lambda i: i not in os.listdir(self.userdir), 
-                                                    os.listdir(self.etc_dir)))
+            etc_items = map(
+                lambda path: f"{self.etc_dir}/{path}",
+                filter(
+                    lambda i: i not in os.listdir(self.userdir),
+                    os.listdir(self.etc_dir),
+                ),
+            )
 
         if os.path.exists(self.gnome_dir):
-            gnome_items = map(lambda path: "%s/%s" % (self.gnome_dir, path),
-                        filter(lambda i: i not in os.listdir(self.userdir), 
-                                                    os.listdir(self.gnome_dir)))
+            gnome_items = map(
+                lambda path: f"{self.gnome_dir}/{path}",
+                filter(
+                    lambda i: i not in os.listdir(self.userdir),
+                    os.listdir(self.gnome_dir),
+                ),
+            )
 
         self.systemitems = etc_items + gnome_items
 
@@ -226,21 +235,17 @@ class AutoStartItem(gtk.TreeView):
             except:
                 continue
 
-            if desktopentry.get("Hidden"):
-                if not all:
+            if not all:
+                if desktopentry.get("Hidden"):
                     continue
             iter = model.append()
             enable = desktopentry.get("X-GNOME-Autostart-enabled")
-            if enable == "false":
-                enable = False
-            else:
-                enable = True
-            
+            enable = enable != "false"
             iconname = desktopentry.get('Icon', locale = False)
             if not iconname:
-               iconname = desktopentry.get('Name', locale = False)
-               if not iconname:
-                   iconname = desktopentry.getName()
+                iconname = desktopentry.get('Name', locale = False)
+            if not iconname:
+                iconname = desktopentry.getName()
 
             pixbuf = icon.get_from_name(iconname, size=32)
 
@@ -255,7 +260,7 @@ class AutoStartItem(gtk.TreeView):
                     comment = _("No description")
                 description = "<b>%s</b>\n%s" % (name, comment)
             else:
-                description = "<b>%s</b>" % name
+                description = f"<b>{name}</b>"
 
             model.set(iter,
                       COLUMN_ACTIVE, enable,
@@ -297,21 +302,19 @@ class AutoStartItem(gtk.TreeView):
             desktopentry.set("X-GNOME-Autostart-enabled", "false")
             desktopentry.write()
             model.set(iter, COLUMN_PATH, path)
+        elif active:
+            desktopentry = DesktopEntry(path)
+            desktopentry.set("X-GNOME-Autostart-enabled", "false")
+            desktopentry.write()
+        elif self.is_in_systemdir(path):
+            os.remove(path)
+            path = os.path.join(self.get_systemdir(path), os.path.basename(path))
+            model.set(iter, COLUMN_PATH, path)
         else:
-            if active:
-                desktopentry = DesktopEntry(path)
-                desktopentry.set("X-GNOME-Autostart-enabled", "false")
-                desktopentry.write()
-            else:
-                if self.is_in_systemdir(path):
-                    os.remove(path)
-                    path = os.path.join(self.get_systemdir(path), os.path.basename(path))
-                    model.set(iter, COLUMN_PATH, path)
-                else:
-                    desktopentry = DesktopEntry(path)
-                    desktopentry.set("X-GNOME-Autostart-enabled", "true")
-                    desktopentry.set("Hidden", "false")
-                    desktopentry.write()
+            desktopentry = DesktopEntry(path)
+            desktopentry.set("X-GNOME-Autostart-enabled", "true")
+            desktopentry.set("Hidden", "false")
+            desktopentry.write()
 
         active =  not active
 
@@ -390,11 +393,10 @@ class AutoStart(TweakModule):
                 self.treeview.update_items(all = True, comment = True)
             else:
                 self.treeview.update_items(all = True)
+        elif another.get_active():
+            self.treeview.update_items(comment = True)
         else:
-            if another.get_active():
-                self.treeview.update_items(comment = True)
-            else:
-                self.treeview.update_items()
+            self.treeview.update_items()
 
     def on_show_comment(self, widget, another):
         if widget.get_active():
@@ -402,11 +404,10 @@ class AutoStart(TweakModule):
                 self.treeview.update_items(all = True, comment = True)
             else:
                 self.treeview.update_items(comment = True)
+        elif another.get_active():
+            self.treeview.update_items(all = True)
         else:
-            if another.get_active():
-                self.treeview.update_items(all = True)
-            else:
-                self.treeview.update_items()
+            self.treeview.update_items()
 
     def on_add_item(self, widget, treeview):
         dialog = AutoStartDialog(parent = widget.get_toplevel())
@@ -418,7 +419,7 @@ class AutoStart(TweakModule):
             elif not cmd:
                 ErrorDialog(_("Text field was empty (or contained only whitespace)")).launch()
             else:
-                path = os.path.join(treeview.userdir, os.path.basename(cmd) + ".desktop")
+                path = os.path.join(treeview.userdir, f"{os.path.basename(cmd)}.desktop")
                 desktopentry = DesktopEntry(path)
                 desktopentry.set("Name", dialog.pm_name.get_text())
                 desktopentry.set("Exec", dialog.pm_cmd.get_text())

@@ -29,11 +29,10 @@ log = logging.getLogger('factory')
 
 def on_reset_button_clicked(widget, reset_target):
     if hasattr(reset_target, 'reset'):
-        log.debug("Reset value to %s by %s" % \
-                  (widget.get_default_value(), reset_target))
+        log.debug(f"Reset value to {widget.get_default_value()} by {reset_target}")
         reset_target.reset()
     else:
-        log.debug("No reset function to call for: %s" % reset_target)
+        log.debug(f"No reset function to call for: {reset_target}")
 
 
 class WidgetFactory:

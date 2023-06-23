@@ -23,8 +23,7 @@ class GconfSetting(object):
         self.key = key
         self.type = type
         self.default = default
-        log.debug("Got the schema_default: %s for key: %s" % \
-                    (self.default, self.key))
+        log.debug(f"Got the schema_default: {self.default} for key: {self.key}")
 
         if default and self.get_value() is None:
             self.set_value(default)
@@ -52,14 +51,10 @@ class GconfSetting(object):
                 log.error('Exception (%s) while processing override' % e)
 
     def get_dir(self):
-        if self.key:
-            return '/'.join(self.key.split('/')[0: -1])
-        else:
-            return None
+        return '/'.join(self.key.split('/')[:-1]) if self.key else None
 
     def get_value(self):
-        gconfvalue = self.client.get(self.key)
-        if gconfvalue:
+        if gconfvalue := self.client.get(self.key):
             if gconfvalue.type == GConf.ValueType.BOOL:
                 return gconfvalue.get_bool()
             if gconfvalue.type == GConf.ValueType.STRING:
@@ -71,20 +66,18 @@ class GconfSetting(object):
             if gconfvalue.type == GConf.ValueType.LIST:
                 final_list = []
                 if gconfvalue.get_list_type() == GConf.ValueType.STRING:
-                    for item in gconfvalue.get_list():
-                        final_list.append(item.get_string())
+                    final_list.extend(item.get_string() for item in gconfvalue.get_list())
                 return final_list
+        elif self.type == int:
+            return 0
+        elif self.type == float:
+            return 0.0
+        elif self.type == bool:
+            return False
+        elif self.type == str:
+            return ''
         else:
-            if self.type == int:
-                return 0
-            elif self.type == float:
-                return 0.0
-            elif self.type == bool:
-                return False
-            elif self.type == str:
-                return ''
-            else:
-                return None
+            return None
 
     def set_value(self, value):
         if self.type and type(value) != self.type:
@@ -114,28 +107,25 @@ class GconfSetting(object):
         self.client.notify_add(self.key, func, data)
 
     def get_schema_value(self):
-        if not self.default:
-            if self.key in self.schema_override:
-                value = self.schema_override[self.key]
-                if self.type and self.type != type(value):
-                    log.debug("get_schema_value: %s, the type is wrong, so convert force" % value)
-                    return self.type(value)
-                return value
-
-            value = self.client.get_default_from_schema(self.key)
-            if value:
-                if value.type == GConf.ValueType.BOOL:
-                    return value.get_bool()
-                elif value.type == GConf.ValueType.STRING:
-                    return value.get_string()
-                elif value.type == GConf.ValueType.INT:
-                    return value.get_int()
-                elif value.type == GConf.ValueType.FLOAT:
-                    return value.get_float()
-            else:
-                raise Exception("No schema value for %s" % self.key)
-        else:
+        if self.default:
             return self.default
+        if self.key in self.schema_override:
+            value = self.schema_override[self.key]
+            if self.type and self.type != type(value):
+                log.debug(f"get_schema_value: {value}, the type is wrong, so convert force")
+                return self.type(value)
+            return value
+
+        if not (value := self.client.get_default_from_schema(self.key)):
+            raise Exception(f"No schema value for {self.key}")
+        if value.type == GConf.ValueType.BOOL:
+            return value.get_bool()
+        elif value.type == GConf.ValueType.STRING:
+            return value.get_string()
+        elif value.type == GConf.ValueType.INT:
+            return value.get_int()
+        elif value.type == GConf.ValueType.FLOAT:
+            return value.get_float()
 
 
 class UserGconfSetting(GconfSetting):

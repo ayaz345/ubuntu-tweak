@@ -38,7 +38,7 @@ class AutoRemovalPlugin(JanitorPlugin):
         worker.remove_packages([cruft.get_package_name() for cruft in cruft_list])
 
     def on_error(self, error):
-        log.error('AptWorker error with: %s' % error)
+        log.error(f'AptWorker error with: {error}')
         self.emit('clean_error', error)
 
     def on_clean_finished(self, transaction, status, parent):

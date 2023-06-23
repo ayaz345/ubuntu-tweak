@@ -52,10 +52,7 @@ class CompizPlugin:
     def create_setting(self, key, target):
         settings = self._plugin.Screen
 
-        if type(settings) == list:
-            return settings[0][key]
-        else:
-            return settings[key]
+        return settings[0][key] if type(settings) == list else settings[key]
 
 
 class CompizSetting(object):

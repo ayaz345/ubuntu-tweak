@@ -75,7 +75,7 @@ class NewDesktopEntry(DesktopEntry):
 
     def __init__(self, filename):
         DesktopEntry.__init__(self, filename)
-        log.debug('NewDesktopEntry: %s' % filename)
+        log.debug(f'NewDesktopEntry: {filename}')
         if self.get(self.shortcuts_key):
             self.mode = self.shortcuts_key
         else:
@@ -105,9 +105,9 @@ class NewDesktopEntry(DesktopEntry):
 
     def get_action_full_name(self, action):
         if self.mode == self.shortcuts_key:
-            return u'%s Shortcut Group' % action
+            return f'{action} Shortcut Group'
         else:
-            return u'Desktop Action %s' % action
+            return f'Desktop Action {action}'
 
     @log_func(log)
     def get_name_by_action(self, action):
@@ -135,14 +135,14 @@ class NewDesktopEntry(DesktopEntry):
     @log_func(log)
     def is_action_visiable(self, action):
         enabled_actions = self.get(self.mode, list=True)
-        log.debug('All visiable actions: %s' % enabled_actions)
+        log.debug(f'All visiable actions: {enabled_actions}')
         return action in enabled_actions
 
     @log_func(log)
     @save_to_user
     def remove_action(self, action):
         actions = self.get(self.mode, list=True)
-        log.debug("remove_action %s from %s" % (action, actions))
+        log.debug(f"remove_action {action} from {actions}")
         #TODO if not local
         if action in actions:
             actions.remove(action)
@@ -169,12 +169,9 @@ class NewDesktopEntry(DesktopEntry):
     @log_func(log)
     @save_to_user
     def reorder_actions(self, actions):
-        visiable_actions = []
-        for action in actions:
-            if self.is_action_visiable(action):
-                visiable_actions.append(action)
-
-        if visiable_actions:
+        if visiable_actions := [
+            action for action in actions if self.is_action_visiable(action)
+        ]:
             self.set(self.mode, ";".join(visiable_actions))
             self.write()
 
@@ -203,7 +200,7 @@ class NewDesktopEntry(DesktopEntry):
             shutil.copy(self.get_system_desktop_file(),
                         self.get_user_desktop_file())
             # Parse a file will not destroy the old content, so destroy manually
-            self.content = dict()
+            self.content = {}
             self.parse(self.filename)
 
 
@@ -290,19 +287,14 @@ class QuickLists(TweakModule):
 
     def get_current_action_and_entry(self):
         model, iter = self.action_view.get_selection().get_selected()
-        if iter:
-            action = model[iter][self.ACTION_NAME]
-            entry = model[iter][self.ACTION_ENTRY]
-            return action, entry
-        else:
+        if not iter:
             return None, None
+        action = model[iter][self.ACTION_NAME]
+        return action, model[iter][self.ACTION_ENTRY]
 
     def get_current_entry(self):
         model, iter = self.icon_view.get_selection().get_selected()
-        if iter:
-            return model[iter][self.DESKTOP_ENTRY]
-        else:
-            return None
+        return model[iter][self.DESKTOP_ENTRY] if iter else None
 
     def on_action_selection_changed(self, widget):
         action, entry = self.get_current_action_and_entry()
@@ -333,8 +325,7 @@ class QuickLists(TweakModule):
             self.action_model.clear()
             self.add_action_button.set_sensitive(True)
 
-            entry = model[iter][self.DESKTOP_ENTRY]
-            if entry:
+            if entry := model[iter][self.DESKTOP_ENTRY]:
                 for action in entry.get_actions():
                     if not self.UNITY_WEBAPPS_ACTION_PATTERN.search(action):
                         self.action_model.append((action,
@@ -344,14 +335,11 @@ class QuickLists(TweakModule):
                                     entry))
                 self.redo_action_button.set_sensitive(True)
                 self.action_view.columns_autosize()
-                if not path:
-                    first_iter = self.action_model.get_iter_first()
-                    if first_iter:
-                        self.action_view.get_selection().select_iter(first_iter)
-                else:
-                    iter = self.action_model.get_iter(path)
-                    if iter:
+                if path:
+                    if iter := self.action_model.get_iter(path):
                         self.action_view.get_selection().select_iter(iter)
+                elif first_iter := self.action_model.get_iter_first():
+                    self.action_view.get_selection().select_iter(first_iter)
             else:
                 self.add_action_button.set_sensitive(False)
                 self.redo_action_button.set_sensitive(False)
@@ -378,9 +366,7 @@ class QuickLists(TweakModule):
 
             entry.add_action_group(next_name)
             entry.set_action_enabled(next_name, True)
-            # Because it may be not the user desktop file, so need icon_iter to select
-            icon_iter = self.icon_model.get_iter(icon_path)
-            if icon_iter:
+            if icon_iter := self.icon_model.get_iter(icon_path):
                 self.icon_view.get_selection().select_iter(icon_iter)
 
             self.select_last_action(first=first)
@@ -392,18 +378,14 @@ class QuickLists(TweakModule):
         if iter:
             action_name = model[iter][self.ACTION_NAME]
             entry = model[iter][self.ACTION_ENTRY]
-            log.debug("Try to remove action: %s" % action_name)
+            log.debug(f"Try to remove action: {action_name}")
             entry.remove_action(action_name)
-            log.debug('Remove: %s succcessfully' % action_name)
+            log.debug(f'Remove: {action_name} succcessfully')
             model.remove(iter)
             self.select_last_action(first=True)
 
     def select_last_action(self, first=False):
-        if first:
-            last_path = len(self.action_model) - 1
-        else:
-            last_path = len(self.action_model)
-
+        last_path = len(self.action_model) - 1 if first else len(self.action_model)
         if last_path >= 0:
             self.on_icon_view_selection_changed(self.icon_view.get_selection(), path=last_path)
 
@@ -432,7 +414,7 @@ class QuickLists(TweakModule):
                 entry = model[iter][self.DESKTOP_ENTRY]
 #                log.debug("Before reset the actions is: %s" % entry.get_actions())
                 entry.reset()
-                log.debug("After reset the actions is: %s" % entry.get_actions())
+                log.debug(f"After reset the actions is: {entry.get_actions()}")
                 self.on_icon_view_selection_changed(self.icon_view.get_selection())
 
     @log_func(log)
@@ -456,12 +438,11 @@ class QuickLists(TweakModule):
         for row in self.icon_model:
             if system.CODENAME == 'precise':
                 new_order.append(row[self.DESKTOP_FILE])
-            else:
-                if not row[self.DESKTOP_FILE].startswith('unity://'):
-                    new_order.append('application://%s' % os.path.basename(row[self.DESKTOP_FILE]))
-                else:
-                    new_order.append(row[self.DESKTOP_FILE])
+            elif row[self.DESKTOP_FILE].startswith('unity://'):
+                new_order.append(row[self.DESKTOP_FILE])
 
+            else:
+                new_order.append(f'application://{os.path.basename(row[self.DESKTOP_FILE])}')
         if new_order != self.launcher_setting.get_value():
             log.debug("Order changed")
             self.launcher_setting.set_value(new_order)

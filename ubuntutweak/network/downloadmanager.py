@@ -33,10 +33,9 @@ class Downloader(GObject.GObject):
     def create_tempdir(self):
         if not os.path.exists(self.tempdir):
             os.makedirs(self.tempdir)
-        else:
-            if not os.path.isdir(self.tempdir): 
-                os.remove(self.tempdir)
-                os.makedirs(self.tempdir)
+        elif not os.path.isdir(self.tempdir): 
+            os.remove(self.tempdir)
+            os.makedirs(self.tempdir)
 
     def clean_tempdir(self):
         for root, dirs, files in os.walk(self.tempdir, topdown=False):
@@ -64,7 +63,7 @@ class Downloader(GObject.GObject):
         if percentage >= 0:
             if percentage < 1:
                 self.emit('downloading', percentage)
-            elif percentage >= 1:
+            else:
                 self.emit('downloaded')
         else:
             self.emit('error')
@@ -91,7 +90,7 @@ class DownloadDialog(BusyDialog):
         if title:
             label = Gtk.Label()
             label.set_alignment(0, 0.5)
-            label.set_markup('<big><b>%s</b></big>' % title)
+            label.set_markup(f'<big><b>{title}</b></big>')
             vbox.pack_start(label, False, False, 0)
 
         self.wait_text = _('Connecting to server')
@@ -135,7 +134,7 @@ class DownloadDialog(BusyDialog):
         self.url = url
 
     def on_downloading(self, widget, percentage):
-        log.debug("Downloading: %s" % percentage)
+        log.debug(f"Downloading: {percentage}")
         if self.time_count != -1:
             self.time_count = -1
 

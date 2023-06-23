@@ -185,8 +185,9 @@ class Unity(TweakModule):
         else:
             notes_label = Gtk.Label()
             notes_label.set_property('halign', Gtk.Align.START)
-            notes_label.set_markup('<span size="smaller">%s</span>' % \
-                    _('Note: you may need to log out to take effect'))
+            notes_label.set_markup(
+                f"""<span size="smaller">{_('Note: you may need to log out to take effect')}</span>"""
+            )
             notes_label._ut_left = 1
 
             box = GridPack(

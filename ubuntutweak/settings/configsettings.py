@@ -22,9 +22,9 @@ class ConfigSetting(RawConfigSetting):
         if self.is_override_schema(self._path):
             self._path = self.build_schema_path(self._path)
             self.key = self.build_schema_path(self.key)
-            log.debug("is override schema, so update path to %s" % self._path)
+            log.debug(f"is override schema, so update path to {self._path}")
             self.schema_default = default or Schema.load_schema(self._section, self._option)
-            log.debug("schema_default is %s" % self.schema_default)
+            log.debug(f"schema_default is {self.schema_default}")
 
         log.debug("Build ConfigSetting for path: %s\n"
                   "\tkey: %s\n"
@@ -37,7 +37,7 @@ class ConfigSetting(RawConfigSetting):
 
     def build_schema_path(self, path):
         if not path.startswith(self.schema_path):
-            return '%s/%s' % (self.schema_path, path)
+            return f'{self.schema_path}/{path}'
         else:
             return path
 

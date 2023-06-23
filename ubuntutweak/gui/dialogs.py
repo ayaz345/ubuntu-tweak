@@ -37,7 +37,7 @@ class BaseDialog(Gtk.MessageDialog):
             self.set_content(message)
 
     def set_title(self, title):
-        self.set_markup('<big><b>%s</b></big>' % title)
+        self.set_markup(f'<big><b>{title}</b></big>')
 
     def set_content(self, message):
         if self.get_property('text'):
@@ -102,10 +102,7 @@ class BusyDialog(Gtk.Dialog):
     def __init__(self, parent=None):
         GObject.GObject.__init__(self, parent=parent)
 
-        if parent:
-            self.parent_window = parent
-        else:
-            self.parent_window = None
+        self.parent_window = parent if parent else None
 
     def set_busy(self):
         set_busy(self.parent_window)
@@ -157,7 +154,7 @@ class ProcessDialog(BusyDialog):
         self._progressbar.set_fraction(fraction)
 
     def set_dialog_lable(self, text):
-        self._label.set_markup('<b><big>%s</big></b>' % text)
+        self._label.set_markup(f'<b><big>{text}</big></b>')
 
     def set_progress_text(self, text):
         self._progressbar.set_text(text)

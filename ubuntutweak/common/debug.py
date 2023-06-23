@@ -73,7 +73,7 @@ def run_traceback(level, textview_only=False, text_only=False):
 
     worker = GuiBuilder('traceback.ui')
 
-    textview = worker.get_object('%s_view' % level)
+    textview = worker.get_object(f'{level}_view')
 
     buffer = textview.get_buffer()
     iter = buffer.get_start_iter()
@@ -96,16 +96,15 @@ def run_traceback(level, textview_only=False, text_only=False):
 
     if textview_only:
         return textview
-    else:
-        dialog = worker.get_object('%sDialog' % level.capitalize())
+    dialog = worker.get_object(f'{level.capitalize()}Dialog')
 
-        to_report = (dialog.run() == Gtk.ResponseType.YES)
+    to_report = (dialog.run() == Gtk.ResponseType.YES)
 
-        dialog.destroy()
-        output.close()
+    dialog.destroy()
+    output.close()
 
-        if to_report:
-            open_bug_report()
+    if to_report:
+        open_bug_report()
 
 def get_traceback():
     return run_traceback('error', text_only=True)
@@ -150,7 +149,7 @@ class TweakLogger(logging.Logger):
                                               False)
 
         #create the single file appending handler
-        if TweakLogger.LOG_FILE_HANDLER == None:
+        if TweakLogger.LOG_FILE_HANDLER is None:
             filename = os.path.join(CONFIG_ROOT, 'ubuntu-tweak.log')
             TweakLogger.LOG_FILE_HANDLER = logging.FileHandler(filename, 'w')
             TweakLogger.LOG_FILE_HANDLER.setFormatter(no_color_formatter)
@@ -179,11 +178,13 @@ logging.setLoggerClass(TweakLogger)
 def log_func(log):
     def wrap(func):
         def func_wrapper(*args, **kwargs):
-            log.debug("%s:" % func)
+            log.debug(f"{func}:")
             for i, arg in enumerate(args):
                 log.debug("\targs-%d: %s" % (i + 1, arg))
             for k, v in enumerate(kwargs):
                 log.debug("\tdict args-%d: %s: %s" % (k, v, kwargs[v]))
             return func(*args, **kwargs)
+
         return func_wrapper
+
     return wrap

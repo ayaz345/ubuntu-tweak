@@ -62,8 +62,7 @@ class UserdirFile(IniFile):
     def get_items(self):
         dict = {}
         for userdir in self.XDG_DIRS.keys():
-            prefix = self.get(userdir).strip('"').split("/")[0]
-            if prefix:
+            if prefix := self.get(userdir).strip('"').split("/")[0]:
                 path = os.getenv("HOME") + "/"  + "/".join(self.get(userdir).strip('"').split("/")[1:])
             else:
                 path = self.get(userdir).strip('"')
@@ -75,8 +74,7 @@ class UserdirFile(IniFile):
     def items(self):
         dict = {}
         for userdir in self.XDG_DIRS.keys():
-            prefix = self.get(userdir).strip('"').split("/")[0]
-            if prefix:
+            if prefix := self.get(userdir).strip('"').split("/")[0]:
                 path = os.getenv("HOME") + "/"  + "/".join(self.get(userdir).strip('"').split("/")[1:])
             else:
                 path = self.get(userdir).strip('"')
@@ -91,7 +89,7 @@ class UserdirFile(IniFile):
         if dirname == os.getenv("HOME"):
             folder = '"$HOME/' + "/".join(fullpath.split('/')[3:]) + '"'
         else:
-            folder = '"' + fullpath + '"'
+            folder = f'"{fullpath}"'
 
         self.set(userdir, folder)
         self.write()

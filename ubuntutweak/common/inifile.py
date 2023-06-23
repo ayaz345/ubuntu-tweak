@@ -9,7 +9,7 @@ class IniFile:
     filename = ''
 
     def __init__(self, filename=None):
-        self.content = dict()
+        self.content = {}
         if filename:
             self.parse(filename)
 
@@ -28,21 +28,13 @@ class IniFile:
 
         for line in file(filename,'r'):
             line = line.strip()
-            # empty line
-            if not line:
+            if not line or line[0] == '#':
                 continue
-            # comment
-            elif line[0] == '#':
-                continue
-            # key
-            else:
-                index = line.find("=")
-                key = line[0:index].strip()
-                value = line[index+1:].strip()
-                if self.hasKey(key):
-                    continue
-                else:
-                    content[key] = value
+            index = line.find("=")
+            key = line[:index].strip()
+            value = line[index+1:].strip()
+            if not self.hasKey(key):
+                content[key] = value
 
         self.filename = filename
 
@@ -77,10 +69,7 @@ class IniFile:
                 del self.content[name]
 
     def hasKey(self, key):
-        if self.content.has_key(key):
-            return True
-        else:
-            return False
+        return bool(self.content.has_key(key))
 
     def getFileName(self):
         return self.filename

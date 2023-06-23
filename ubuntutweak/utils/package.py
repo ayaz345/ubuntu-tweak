@@ -100,7 +100,7 @@ class AptWorker(object):
             res = dia.run()
             dia.hide()
             if res != Gtk.ResponseType.OK:
-                log.debug("Response is: %s" % res)
+                log.debug(f"Response is: {res}")
                 if self.finish_handler:
                     log.debug("Finish_handler...")
                     self.finish_handler(trans, 0, self.data)
@@ -170,8 +170,8 @@ class AptWorker(object):
             return self.cache
 
     @classmethod
-    def update_apt_cache(self, init=False):
+    def update_apt_cache(cls, init=False):
         '''if init is true, force to update, or it will update only once'''
-        if init or not getattr(self, 'cache'):
+        if init or not getattr(cls, 'cache'):
             apt_pkg.init()
-            self.cache = apt.Cache()
+            cls.cache = apt.Cache()

@@ -51,7 +51,7 @@ class UtUrl(dbus.service.Object):
                          in_signature='s', out_signature='')
     def add_package(self, package):
         self.to_add.append(package)
-        self.show_notify('"%s" is adding to the install list.' % package)
+        self.show_notify(f'"{package}" is adding to the install list.')
 
     @dbus.service.method(dbus_interface=UTURL_DBUS_IFACE,
                          in_signature='s', out_signature='')
@@ -64,8 +64,9 @@ class UtUrl(dbus.service.Object):
         notify.show()
 
     def run(self):
-        self.window.body_label.set_text('Do you want to install package "%s"?' % 
-                                 ', '.join(self.to_add))
+        self.window.body_label.set_text(
+            f"""Do you want to install package "{', '.join(self.to_add)}"?"""
+        )
         self.window.confirmation_dialog.run()
 
     def destroy(self):
@@ -82,14 +83,14 @@ if __name__ == "__main__":
             dbus.bus.REQUEST_NAME_REPLY_PRIMARY_OWNER:
         uturl = session_bus.get_object(UTURL_DBUS_IFACE, UTURL_DBUS_PATH)
         if installed:
-            uturl.show_notify('"%s" is already installed.' % package)
+            uturl.show_notify(f'"{package}" is already installed.')
         else:
             uturl.add_package(package)
     else:
         uturl = UtUrl(session_bus)
 
         if installed:
-            dialog = InfoDialog('"%s" is already installed.' % package)
+            dialog = InfoDialog(f'"{package}" is already installed.')
             dialog.launch()
         else:
             uturl.add_package(package)

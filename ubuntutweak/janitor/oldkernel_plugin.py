@@ -59,7 +59,7 @@ class OldKernelPlugin(JanitorPlugin):
         worker.remove_packages([cruft.get_package_name() for cruft in cruft_list])
 
     def on_error(self, error):
-        log.error('AptWorker error with: %s' % error)
+        log.error(f'AptWorker error with: {error}')
         self.emit('clean_error', error)
 
     def on_clean_finished(self, transaction, status, parent):
@@ -68,17 +68,17 @@ class OldKernelPlugin(JanitorPlugin):
         self.emit('all_cleaned', True)
 
     def is_old_kernel_package(self, pkg):
-        basenames = ['linux-image', 'linux-image-extra', 'linux-headers',
-                     'linux-image-debug', 'linux-ubuntu-modules',
-                     'linux-header-lum', 'linux-backport-modules',
-                     'linux-header-lbm', 'linux-restricted-modules']
-
         if pkg.startswith('linux'):
             package = self.p_kernel_package.findall(pkg)
             if package:
                 package = package[0].rstrip('-')
             else:
                 return False
+
+            basenames = ['linux-image', 'linux-image-extra', 'linux-headers',
+                         'linux-image-debug', 'linux-ubuntu-modules',
+                         'linux-header-lum', 'linux-backport-modules',
+                         'linux-header-lbm', 'linux-restricted-modules']
 
             if package in basenames:
                 match = self.p_kernel_version.findall(pkg)
@@ -90,13 +90,7 @@ class OldKernelPlugin(JanitorPlugin):
     def _compare_kernel_version(self, version):
         c1, c2 = self.current_kernel_version.split('-')
         p1, p2 = version.split('-')
-        if c1 == p1:
-            if int(c2) > int(p2):
-                return True
-            else:
-                return False
-        else:
-            return LooseVersion(c1) > LooseVersion(p1)
+        return int(c2) > int(p2) if c1 == p1 else LooseVersion(c1) > LooseVersion(p1)
 
     def get_summary(self, count):
         if count:

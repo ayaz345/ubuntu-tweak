@@ -154,7 +154,7 @@ class AppsWebView(WebKit.WebView):
                           'version': __version__,
                           'codename': system.CODENAME}
         if IS_TESTING:
-            user_agent = user_agent + '-beta'
+            user_agent = f'{user_agent}-beta'
         self.get_settings().set_property('user-agent', user_agent)
 
     @log_func(log)
@@ -265,7 +265,7 @@ class AppsWebView(WebKit.WebView):
     def update_action_button(self, action_id, disabled=False):
         text = self.action_text_dict[action_id]
 
-        self.execute_script('$(".install-button")[0].innerHTML = "%s";' % text);
+        self.execute_script(f'$(".install-button")[0].innerHTML = "{text}";');
         self.execute_script('$(".install-button").attr("action-id", "%d")' % action_id);
 
         if action_id == self.NOT_AVAILABLE_ACTION:
@@ -309,12 +309,11 @@ class AppsWebView(WebKit.WebView):
                 });
                 ''' % (system.CODENAME, list(system.UBUNTU_CODENAMES)));
 
-        enabled_list = []
-
-        for source in SourcesList().list:
-            if source.type == 'deb' and not source.disabled:
-                enabled_list.append(source.uri)
-
+        enabled_list = [
+            source.uri
+            for source in SourcesList().list
+            if source.type == 'deb' and not source.disabled
+        ]
         self.execute_script('''
                 var enabled_list = %s;
                 $(".source-view").each(function(index) {
@@ -382,11 +381,9 @@ class CategoryView(Gtk.TreeView):
 
     def _create_model(self):
         '''The model is icon, title and the list reference'''
-        model = Gtk.TreeStore(GObject.TYPE_INT,
-                              GObject.TYPE_STRING,
-                              GObject.TYPE_STRING)
-
-        return model
+        return Gtk.TreeStore(
+            GObject.TYPE_INT, GObject.TYPE_STRING, GObject.TYPE_STRING
+        )
 
     def _add_columns(self):
         column = Gtk.TreeViewColumn(_('Category'))
@@ -418,8 +415,7 @@ class CategoryView(Gtk.TreeView):
 
             if self._status:
                 self._status.load_category_from_parser(self.parser)
-                count = self._status.get_cate_unread_count(id)
-                if count:
+                if count := self._status.get_cate_unread_count(id):
                     display = '<b>%s (%d)</b>' % (name, count)
 
             log.debug("Insert category model: id: %s"
@@ -449,8 +445,7 @@ class CategoryView(Gtk.TreeView):
 
             name = model[iter][self.CATE_NAME]
 
-            count = self._status.get_cate_unread_count(id)
-            if count:
+            if count := self._status.get_cate_unread_count(id):
                 model[iter][self.CATE_DISPLAY] = '<b>%s (%d)</b>' % (name, count)
             else:
                 model[iter][self.CATE_DISPLAY] = name
